@@ -1,0 +1,52 @@
+# ----------------------------------------
+# Node / npm
+# ----------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# ------------------------------
+# Builds / Generated files
+# ----------------------------------------
+dist/
+out/
+build/
+release/
+coverage/
+
+# Electron packaged apps
+*.asar
+
+# ----------------------------------------
+# Vscode / Jetbrains IDEs
+# ----------------------------------------
+.vscode/
+.idea/
+
+# ----------------------------------------
+# OS generated
+# ----------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ----------------------------------------
+# Logs
+# ----------------------------------------
+logs/
+*.log
+
+# ----------------------------------------
+# Environment variables
+# ----------------------------------------
+.env
+.env.*.local
+
+# ----------------------------------------
+# Optional (if using GitHub Codespace/WSL)
+# ----------------------------------------
+*.code-workspace
