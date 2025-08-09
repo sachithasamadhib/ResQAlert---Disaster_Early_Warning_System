@@ -2,9 +2,1249 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>My Electron App</title>
+    <title>Disaster Management Admin Panel</title>
+    <script src="node_modules/chart.js/dist/chart.umd.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #333;
+        overflow-x: hidden;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .logo h1 {
+        color: #1e3c72;
+        font-size: 1.8em;
+        font-weight: 600;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        border-radius: 25px;
+        background: #f0f9ff;
+        border: 2px solid #0ea5e9;
+      }
+
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #10b981;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 30px 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 25px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f1f5f9;
+      }
+
+      .card-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card-icon {
+        font-size: 1.5em;
+      }
+
+      .sensor-location {
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .metric {
+        text-align: center;
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border-left: 4px solid #3b82f6;
+      }
+
+      .metric-value {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #1e293b;
+        display: block;
+      }
+
+      .metric-label {
+        font-size: 0.9em;
+        color: #64748b;
+        margin-top: 5px;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 20px;
+      }
+
+      .alert-card {
+        border-left: 5px solid #ef4444;
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      }
+
+      .warning-card {
+        border-left: 5px solid #f59e0b;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      }
+
+      .normal-card {
+        border-left: 5px solid #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      }
+
+      .connection-section {
+        grid-column: 1 / -1;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        text-align: center;
+      }
+
+      .connection-section .card-title {
+        color: white;
+        justify-content: center;
+      }
+
+      .btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 10px;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .status-message {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 10px;
+        font-weight: 600;
+        min-height: 20px;
+      }
+
+      .status-success {
+        background: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+        border: 2px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .status-error {
+        background: rgba(239, 68, 68, 0.1);
+        color: #7f1d1d;
+        border: 2px solid rgba(239, 68, 68, 0.3);
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .last-updated {
+        text-align: center;
+        color: #64748b;
+        font-size: 0.9em;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .refresh-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .refresh-btn:hover {
+        background: #059669;
+        transform: translateY(-2px);
+      }
+
+      .alert-section {
+        grid-column: 1 / -1;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+      }
+
+      .alert-section .card-title {
+        color: white;
+      }
+
+      .alert-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* User Management Styles */
+      .user-management-section {
+        grid-column: 1 / -1;
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
+      }
+
+      .user-management-section .card-title {
+        color: white;
+      }
+
+      .user-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+
+      .user-stat {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .user-stat-number {
+        font-size: 2em;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .user-stat-label {
+        font-size: 0.9em;
+        opacity: 0.9;
+      }
+
+      .user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+
+      .user-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+      }
+
+      .user-card:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+      }
+
+      .user-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+
+      .user-avatar {
+        font-size: 2.5em;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+      }
+
+      .user-info h3 {
+        margin: 0;
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+
+      .user-role {
+        font-size: 0.9em;
+        opacity: 0.8;
+        margin: 2px 0;
+      }
+
+      .user-status {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: 600;
+        margin-top: 5px;
+      }
+
+      .status-active {
+        background: rgba(16, 185, 129, 0.3);
+        color: #dcfce7;
+      }
+
+      .status-offline {
+        background: rgba(107, 114, 128, 0.3);
+        color: #f3f4f6;
+      }
+
+      .status-training {
+        background: rgba(245, 158, 11, 0.3);
+        color: #fef3c7;
+      }
+
+      .user-details {
+        margin-top: 15px;
+        font-size: 0.9em;
+      }
+
+      .user-details div {
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .user-permissions {
+        margin-top: 15px;
+      }
+
+      .permission-tag {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin: 2px 4px 2px 0;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .activity-log {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .activity-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .activity-item:last-child {
+        border-bottom: none;
+      }
+
+      .activity-info {
+        flex: 1;
+      }
+
+      .activity-user {
+        font-weight: 600;
+        font-size: 0.9em;
+      }
+
+      .activity-action {
+        font-size: 0.95em;
+        margin: 2px 0;
+      }
+
+      .activity-details {
+        font-size: 0.8em;
+        opacity: 0.7;
+      }
+
+      .activity-time {
+        font-size: 0.8em;
+        opacity: 0.8;
+        text-align: right;
+        min-width: 120px;
+      }
+
+      .activity-severity {
+        width: 8px;
+        height: 40px;
+        border-radius: 4px;
+        margin-right: 15px;
+      }
+
+      .severity-info {
+        background: #3b82f6;
+      }
+
+      .severity-warning {
+        background: #f59e0b;
+      }
+
+      .severity-critical {
+        background: #ef4444;
+      }
+
+      @media (max-width: 768px) {
+        .main-container {
+          grid-template-columns: 1fr;
+          padding: 20px 15px;
+        }
+        
+        .header-content {
+          flex-direction: column;
+          gap: 15px;
+        }
+        
+        .metrics-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .user-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .user-stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .activity-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .activity-time {
+          text-align: left;
+          min-width: auto;
+        }
+      }
+    </style>
   </head>
   <body>
-    <h1>Hello from Electron!</h1>
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <span style="font-size: 2em;">🚨</span>
+          <h1>Disaster Management Control Center</h1>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span id="connectionStatus">System Online</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-container">
+      <!-- Connection Testing Section -->
+      <div class="card connection-section">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">🔥</span>
+            Firebase Connection Control
+          </div>
+        </div>
+        <p style="margin-bottom: 20px;">Monitor and test your connection to the Firebase Realtime Database</p>
+        <div class="controls">
+          <button id="testConnectionBtn" class="btn">Test Connection</button>
+          <button id="refreshDataBtn" class="refresh-btn">Refresh Data</button>
+        </div>
+        <div id="statusMessage" class="status-message"></div>
+      </div>
+
+      <!-- Alert Section -->
+      <div id="alertSection" class="card alert-section" style="display: none;">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">⚠️</span>
+            Active Alerts
+          </div>
+        </div>
+        <div id="alertsList"></div>
+      </div>
+
+      <!-- BMP180 Environmental Sensor -->
+      <div class="card normal-card" id="bmp180Card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">🌡️</span>
+            Environmental Monitor
+          </div>
+          <div class="sensor-location">Gampaha</div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-value" id="temperatureValue">--</span>
+            <div class="metric-label">Temperature (°C)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="pressureValue">--</span>
+            <div class="metric-label">Pressure (hPa)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="altitudeValue">--</span>
+            <div class="metric-label">Altitude (m)</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="bmp180Chart"></canvas>
+        </div>
+        <div class="last-updated" id="bmp180LastUpdated">Last updated: --</div>
+      </div>
+
+      <!-- MPU6050 Seismic Sensor -->
+      <div class="card normal-card" id="mpu6050Card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">📊</span>
+            Seismic Activity Monitor
+          </div>
+          <div class="sensor-location">Rathnapura</div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-value" id="accelXValue">--</span>
+            <div class="metric-label">Accel X (g)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="accelYValue">--</span>
+            <div class="metric-label">Accel Y (g)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="accelZValue">--</span>
+            <div class="metric-label">Accel Z (g)</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="mpu6050Chart"></canvas>
+        </div>
+        <div class="last-updated" id="mpu6050LastUpdated">Last updated: --</div>
+      </div>
+
+      <!-- Tilt Sensor -->
+      <div class="card normal-card" id="tiltCard">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">⚖️</span>
+            Landslide Detection
+          </div>
+          <div class="sensor-location">Rathnapura</div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-value" id="tiltValue">--</span>
+            <div class="metric-label">Tilt Status</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="tiltReadings">--</span>
+            <div class="metric-label">Total Readings</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="tiltChart"></canvas>
+        </div>
+        <div class="last-updated" id="tiltLastUpdated">Last updated: --</div>
+      </div>
+
+      <!-- User Management Section -->
+      <div class="card user-management-section">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">👥</span>
+            User Management & Activity
+          </div>
+        </div>
+        
+        <!-- User Statistics -->
+        <div class="user-stats">
+          <div class="user-stat">
+            <span class="user-stat-number" id="totalUsers">--</span>
+            <div class="user-stat-label">Total Users</div>
+          </div>
+          <div class="user-stat">
+            <span class="user-stat-number" id="activeUsers">--</span>
+            <div class="user-stat-label">Active</div>
+          </div>
+          <div class="user-stat">
+            <span class="user-stat-number" id="offlineUsers">--</span>
+            <div class="user-stat-label">Offline</div>
+          </div>
+          <div class="user-stat">
+            <span class="user-stat-number" id="trainingUsers">--</span>
+            <div class="user-stat-label">Training</div>
+          </div>
+        </div>
+
+        <!-- User Grid -->
+        <div class="user-grid" id="userGrid">
+          <!-- Users will be populated here -->
+        </div>
+
+        <!-- Activity Log -->
+        <div class="activity-log">
+          <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span>📋</span>
+            Recent Activity Log
+          </h3>
+          <div id="activityLog">
+            <!-- Activity items will be populated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let bmp180Chart, mpu6050Chart, tiltChart;
+      let sensorData = {
+        bmp180: {},
+        mpu6050: {},
+        tilt: {}
+      };
+      let userData = {
+        users: [],
+        activity: []
+      };
+
+      // DOM elements
+      const testBtn = document.getElementById('testConnectionBtn');
+      const refreshBtn = document.getElementById('refreshDataBtn');
+      const statusDiv = document.getElementById('statusMessage');
+      const connectionStatus = document.getElementById('connectionStatus');
+
+      // Initialize charts
+      function initializeCharts() {
+        // BMP180 Chart
+        const bmp180Ctx = document.getElementById('bmp180Chart').getContext('2d');
+        bmp180Chart = new Chart(bmp180Ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Temperature (°C)',
+                data: [],
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                yAxisID: 'y'
+              },
+              {
+                label: 'Pressure (hPa)',
+                data: [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: { display: true, text: 'Temperature (°C)' }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: { display: true, text: 'Pressure (hPa)' },
+                grid: { drawOnChartArea: false }
+              }
+            },
+            plugins: {
+              legend: { display: true },
+              title: { display: true, text: 'Environmental Data Trends' }
+            }
+          }
+        });
+
+        // MPU6050 Chart
+        const mpu6050Ctx = document.getElementById('mpu6050Chart').getContext('2d');
+        mpu6050Chart = new Chart(mpu6050Ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Accel X',
+                data: [],
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)'
+              },
+              {
+                label: 'Accel Y',
+                data: [],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)'
+              },
+              {
+                label: 'Accel Z',
+                data: [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                title: { display: true, text: 'Acceleration (g)' }
+              }
+            },
+            plugins: {
+              legend: { display: true },
+              title: { display: true, text: 'Seismic Activity Monitoring' }
+            }
+          }
+        });
+
+        // Tilt Chart
+        const tiltCtx = document.getElementById('tiltChart').getContext('2d');
+        tiltChart = new Chart(tiltCtx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Tilt Status',
+                data: [],
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                stepped: true,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                min: 0,
+                max: 1,
+                ticks: {
+                  stepSize: 1,
+                  callback: function(value) {
+                    return value === 1 ? 'Tilted' : 'Normal';
+                  }
+                },
+                title: { display: true, text: 'Tilt Status' }
+              }
+            },
+            plugins: {
+              legend: { display: true },
+              title: { display: true, text: 'Landslide Detection Status' }
+            }
+          }
+        });
+      }
+
+      // Update user management displays
+      function updateUserManagement() {
+        // Update user statistics
+        document.getElementById('totalUsers').textContent = userData.totalUsers || '--';
+        document.getElementById('activeUsers').textContent = userData.activeUsers || '--';
+        document.getElementById('offlineUsers').textContent = userData.offlineUsers || '--';
+        document.getElementById('trainingUsers').textContent = userData.trainingUsers || '--';
+
+        // Update user grid
+        const userGrid = document.getElementById('userGrid');
+        if (userData.users && userData.users.length > 0) {
+          userGrid.innerHTML = userData.users.map(user => `
+            <div class="user-card">
+              <div class="user-header">
+                <div class="user-avatar">${user.avatar}</div>
+                <div class="user-info">
+                  <h3>${user.name}</h3>
+                  <div class="user-role">${user.role}</div>
+                  <span class="user-status status-${user.status.toLowerCase()}">${user.status}</span>
+                </div>
+              </div>
+              <div class="user-details">
+                <div>
+                  <span>📧 Email:</span>
+                  <span>${user.email}</span>
+                </div>
+                <div>
+                  <span>📍 Location:</span>
+                  <span>${user.location}</span>
+                </div>
+                <div>
+                  <span>🕐 Last Login:</span>
+                  <span>${user.lastLogin}</span>
+                </div>
+              </div>
+              <div class="user-permissions">
+                <strong>Permissions:</strong><br>
+                ${user.permissions.map(permission => 
+                  `<span class="permission-tag">${permission}</span>`
+                ).join('')}
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Update activity log
+        const activityLog = document.getElementById('activityLog');
+        if (userData.activity && userData.activity.length > 0) {
+          activityLog.innerHTML = userData.activity.map(activity => `
+            <div class="activity-item">
+              <div class="activity-severity severity-${activity.severity}"></div>
+              <div class="activity-info">
+                <div class="activity-user">${activity.userName}</div>
+                <div class="activity-action">${activity.action}</div>
+                <div class="activity-details">${activity.details}</div>
+              </div>
+              <div class="activity-time">${activity.timestamp}</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // Fetch user management data
+      async function fetchUserData() {
+        try {
+          const [usersResult, activityResult] = await Promise.all([
+            window.electronAPI.getUsersData(),
+            window.electronAPI.getUserActivity()
+          ]);
+
+          if (usersResult.success) {
+            userData = { ...userData, ...usersResult.data };
+          }
+
+          if (activityResult.success) {
+            userData.activity = activityResult.data;
+          }
+
+          updateUserManagement();
+        } catch (error) {
+          console.error('Failed to fetch user data:', error);
+        }
+      }
+
+      // Update chart data
+      function updateCharts() {
+        // Update BMP180 chart
+        if (sensorData.bmp180 && Object.keys(sensorData.bmp180).length > 0) {
+          const bmpEntries = Object.entries(sensorData.bmp180)
+            .filter(([key, value]) => value.temperature_C && value.pressure_hPa)
+            .slice(-20);
+          
+          const bmpLabels = bmpEntries.map(([key, value]) => {
+            const time = value.timestamp ? value.timestamp.split(' ')[1] : new Date().toLocaleTimeString();
+            return time.substring(0, 5);
+          });
+          
+          const tempData = bmpEntries.map(([key, value]) => value.temperature_C);
+          const pressureData = bmpEntries.map(([key, value]) => value.pressure_hPa);
+          
+          bmp180Chart.data.labels = bmpLabels;
+          bmp180Chart.data.datasets[0].data = tempData;
+          bmp180Chart.data.datasets[1].data = pressureData;
+          bmp180Chart.update();
+        }
+
+        // Update MPU6050 chart
+        if (sensorData.mpu6050 && Object.keys(sensorData.mpu6050).length > 0) {
+          const mpuEntries = Object.entries(sensorData.mpu6050)
+            .filter(([key, value]) => value.accelX !== undefined)
+            .slice(-20);
+          
+          const mpuLabels = mpuEntries.map(([key, value]) => {
+            const time = value.timestamp ? value.timestamp.split(' ')[1] : new Date().toLocaleTimeString();
+            return time.substring(0, 5);
+          });
+          
+          const accelXData = mpuEntries.map(([key, value]) => value.accelX || 0);
+          const accelYData = mpuEntries.map(([key, value]) => value.accelY || 0);
+          const accelZData = mpuEntries.map(([key, value]) => value.accelZ || 0);
+          
+          mpu6050Chart.data.labels = mpuLabels;
+          mpu6050Chart.data.datasets[0].data = accelXData;
+          mpu6050Chart.data.datasets[1].data = accelYData;
+          mpu6050Chart.data.datasets[2].data = accelZData;
+          mpu6050Chart.update();
+        }
+
+        // Update Tilt chart
+        if (sensorData.tilt && Object.keys(sensorData.tilt).length > 0) {
+          const tiltEntries = Object.entries(sensorData.tilt)
+            .filter(([key, value]) => value.value !== undefined)
+            .slice(-20);
+          
+          const tiltLabels = tiltEntries.map(([key, value]) => {
+            const time = value.timestamp ? value.timestamp.split(' ')[1] : new Date().toLocaleTimeString();
+            return time.substring(0, 5);
+          });
+          
+          const tiltData = tiltEntries.map(([key, value]) => value.value);
+          
+          tiltChart.data.labels = tiltLabels;
+          tiltChart.data.datasets[0].data = tiltData;
+          tiltChart.update();
+        }
+      }
+
+      // Update sensor displays
+      function updateSensorDisplays() {
+        // Update BMP180 displays
+        if (sensorData.bmp180 && Object.keys(sensorData.bmp180).length > 0) {
+          const latestBmp = Object.values(sensorData.bmp180).slice(-1)[0];
+          if (latestBmp) {
+            document.getElementById('temperatureValue').textContent = 
+              latestBmp.temperature_C ? latestBmp.temperature_C.toFixed(1) : '--';
+            document.getElementById('pressureValue').textContent = 
+              latestBmp.pressure_hPa ? latestBmp.pressure_hPa.toFixed(1) : '--';
+            document.getElementById('altitudeValue').textContent = 
+              latestBmp.altitude_m ? latestBmp.altitude_m.toFixed(1) : '--';
+            document.getElementById('bmp180LastUpdated').textContent = 
+              `Last updated: ${latestBmp.timestamp || 'Unknown'}`;
+            
+            // Update card status
+            const bmp180Card = document.getElementById('bmp180Card');
+            if (latestBmp.temperature_C > 35 || latestBmp.pressure_hPa < 1000) {
+              bmp180Card.className = 'card warning-card';
+            } else {
+              bmp180Card.className = 'card normal-card';
+            }
+          }
+        }
+
+        // Update MPU6050 displays
+        if (sensorData.mpu6050 && Object.keys(sensorData.mpu6050).length > 0) {
+          const latestMpu = Object.values(sensorData.mpu6050).slice(-1)[0];
+          if (latestMpu) {
+            document.getElementById('accelXValue').textContent = 
+              latestMpu.accelX !== undefined ? latestMpu.accelX.toFixed(3) : '--';
+            document.getElementById('accelYValue').textContent = 
+              latestMpu.accelY !== undefined ? latestMpu.accelY.toFixed(3) : '--';
+            document.getElementById('accelZValue').textContent = 
+              latestMpu.accelZ !== undefined ? latestMpu.accelZ.toFixed(3) : '--';
+            document.getElementById('mpu6050LastUpdated').textContent = 
+              `Last updated: ${latestMpu.timestamp || 'Unknown'}`;
+            
+            // Check for high acceleration (potential earthquake)
+            const mpu6050Card = document.getElementById('mpu6050Card');
+            const totalAccel = Math.sqrt(
+              (latestMpu.accelX || 0) ** 2 + 
+              (latestMpu.accelY || 0) ** 2 + 
+              (latestMpu.accelZ || 0) ** 2
+            );
+            
+            if (totalAccel > 1.5) {
+              mpu6050Card.className = 'card alert-card';
+            } else if (totalAccel > 1.2) {
+              mpu6050Card.className = 'card warning-card';
+            } else {
+              mpu6050Card.className = 'card normal-card';
+            }
+          }
+        }
+
+        // Update Tilt displays
+        if (sensorData.tilt && Object.keys(sensorData.tilt).length > 0) {
+          const latestTilt = Object.values(sensorData.tilt).slice(-1)[0];
+          const totalReadings = Object.keys(sensorData.tilt).length;
+          
+          if (latestTilt) {
+            document.getElementById('tiltValue').textContent = 
+              latestTilt.value === 1 ? 'TILTED' : 'NORMAL';
+            document.getElementById('tiltReadings').textContent = totalReadings;
+            document.getElementById('tiltLastUpdated').textContent = 
+              `Last updated: ${latestTilt.timestamp || 'Unknown'}`;
+            
+            // Update card status
+            const tiltCard = document.getElementById('tiltCard');
+            if (latestTilt.value === 1) {
+              tiltCard.className = 'card alert-card';
+            } else {
+              tiltCard.className = 'card normal-card';
+            }
+          }
+        }
+      }
+
+      // Check for alerts
+      function checkAlerts() {
+        const alerts = [];
+        
+        // Check BMP180 alerts
+        if (sensorData.bmp180 && Object.keys(sensorData.bmp180).length > 0) {
+          const latestBmp = Object.values(sensorData.bmp180).slice(-1)[0];
+          if (latestBmp && latestBmp.temperature_C > 35) {
+            alerts.push({
+              type: 'warning',
+              message: `High temperature detected in Gampaha: ${latestBmp.temperature_C.toFixed(1)}°C`,
+              time: latestBmp.timestamp
+            });
+          }
+          if (latestBmp && latestBmp.pressure_hPa < 1000) {
+            alerts.push({
+              type: 'warning',
+              message: `Low pressure detected in Gampaha: ${latestBmp.pressure_hPa.toFixed(1)} hPa`,
+              time: latestBmp.timestamp
+            });
+          }
+        }
+
+        // Check MPU6050 alerts
+        if (sensorData.mpu6050 && Object.keys(sensorData.mpu6050).length > 0) {
+          const latestMpu = Object.values(sensorData.mpu6050).slice(-1)[0];
+          if (latestMpu) {
+            const totalAccel = Math.sqrt(
+              (latestMpu.accelX || 0) ** 2 + 
+              (latestMpu.accelY || 0) ** 2 + 
+              (latestMpu.accelZ || 0) ** 2
+            );
+            if (totalAccel > 1.5) {
+              alerts.push({
+                type: 'alert',
+                message: `HIGH SEISMIC ACTIVITY in Rathnapura: ${totalAccel.toFixed(3)}g`,
+                time: latestMpu.timestamp
+              });
+            }
+          }
+        }
+
+        // Check Tilt alerts
+        if (sensorData.tilt && Object.keys(sensorData.tilt).length > 0) {
+          const latestTilt = Object.values(sensorData.tilt).slice(-1)[0];
+          if (latestTilt && latestTilt.value === 1) {
+            alerts.push({
+              type: 'alert',
+              message: 'LANDSLIDE ALERT: Tilt sensor activated in Rathnapura',
+              time: latestTilt.timestamp
+            });
+          }
+        }
+
+        // Display alerts
+        const alertSection = document.getElementById('alertSection');
+        const alertsList = document.getElementById('alertsList');
+        
+        if (alerts.length > 0) {
+          alertSection.style.display = 'block';
+          alertsList.innerHTML = alerts.map(alert => `
+            <div class="alert-item">
+              <div>
+                <strong>${alert.type.toUpperCase()}:</strong> ${alert.message}
+              </div>
+              <div style="font-size: 0.9em; opacity: 0.8;">
+                ${alert.time || 'Unknown time'}
+              </div>
+            </div>
+          `).join('');
+        } else {
+          alertSection.style.display = 'none';
+        }
+      }
+
+      // Test Firebase connection
+      async function testConnection() {
+        testBtn.disabled = true;
+        testBtn.innerHTML = '<span class="loading"></span>Testing Connection...';
+        
+        statusDiv.className = 'status-message';
+        statusDiv.textContent = '';
+
+        try {
+          const result = await window.electronAPI.testFirebaseConnection();
+          
+          if (result.success) {
+            statusDiv.className = 'status-message status-success';
+            statusDiv.textContent = '✅ ' + result.message;
+            connectionStatus.textContent = 'Connected';
+          } else {
+            statusDiv.className = 'status-message status-error';
+            statusDiv.textContent = '❌ ' + result.message;
+            connectionStatus.textContent = 'Disconnected';
+          }
+        } catch (error) {
+          statusDiv.className = 'status-message status-error';
+          statusDiv.textContent = '❌ Connection test failed: ' + error.message;
+          connectionStatus.textContent = 'Error';
+        }
+
+        testBtn.disabled = false;
+        testBtn.textContent = 'Test Connection';
+      }
+
+      // Fetch and update sensor data
+      async function refreshData() {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Loading...';
+        
+        try {
+          const result = await window.electronAPI.fetchLatestSensorData();
+          
+          if (result.success) {
+            sensorData = result.data;
+            updateSensorDisplays();
+            updateCharts();
+            checkAlerts();
+            
+            // Also fetch user data
+            await fetchUserData();
+            
+            statusDiv.className = 'status-message status-success';
+            statusDiv.textContent = '✅ Data refreshed successfully';
+          } else {
+            statusDiv.className = 'status-message status-error';
+            statusDiv.textContent = '❌ Failed to fetch data: ' + result.message;
+          }
+        } catch (error) {
+          statusDiv.className = 'status-message status-error';
+          statusDiv.textContent = '❌ Data fetch failed: ' + error.message;
+        }
+        
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Refresh Data';
+      }
+
+      // Event listeners
+      testBtn.addEventListener('click', testConnection);
+      refreshBtn.addEventListener('click', refreshData);
+
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeCharts();
+        
+        // Show initial status
+        statusDiv.className = 'status-message';
+        statusDiv.innerHTML = '💡 Welcome to the Disaster Management Control Center<br>Click "Test Connection" to verify Firebase connectivity';
+        
+        // Auto-refresh data every 30 seconds
+        setInterval(refreshData, 30000);
+        
+        // Initial data load
+        refreshData();
+        
+        // Initial user data load
+        fetchUserData();
+      });
+    </script>
   </body>
 </html>
