@@ -123,28 +123,223 @@ async function fetchLatestSensorData() {
     
     const firebaseDatabase = await import('firebase/database');
     
-    // Fetch latest data from each sensor type
-    const bmpRef = firebaseDatabase.ref(database, '/Sensors/BMP180Readings');
-    const mpuRef = firebaseDatabase.ref(database, '/Sensors/MPU6050Readings');
-    const tiltRef = firebaseDatabase.ref(database, '/Sensors/TiltReadings');
+  // Fetch latest data from each sensor type
+  const bmpRef = firebaseDatabase.ref(database, '/Sensors/BMP180Readings');
+  const mpuRef = firebaseDatabase.ref(database, '/Sensors/MPU6050Readings');
+  const rainRef = firebaseDatabase.ref(database, '/Sensors/RainReadings');
+  // Support multiple possible soil paths
+  const soilRefPrimary = firebaseDatabase.ref(database, '/Sensors/SoilReadings');
+  const soilRefAlt1 = firebaseDatabase.ref(database, '/SoilMoistureReadings');
+  const soilRefAlt2 = firebaseDatabase.ref(database, '/Sensors/SoilMoistureReadings');
+  const tiltRef = firebaseDatabase.ref(database, '/Sensors/TiltReadings');
+  // Water level sensor
+  const waterLevelRef = firebaseDatabase.ref(database, '/Sensors/waterLevelSensor/levelData');
     
     // Get last 20 readings from each sensor
-    const bmpQuery = firebaseDatabase.query(bmpRef, firebaseDatabase.limitToLast(20));
-    const mpuQuery = firebaseDatabase.query(mpuRef, firebaseDatabase.limitToLast(20));
-    const tiltQuery = firebaseDatabase.query(tiltRef, firebaseDatabase.limitToLast(20));
+  const bmpQuery = firebaseDatabase.query(bmpRef, firebaseDatabase.limitToLast(20));
+  const mpuQuery = firebaseDatabase.query(mpuRef, firebaseDatabase.limitToLast(20));
+  const rainQuery = firebaseDatabase.query(rainRef, firebaseDatabase.limitToLast(20));
+  const soilQueryPrimary = firebaseDatabase.query(soilRefPrimary, firebaseDatabase.limitToLast(20));
+  const soilQueryAlt1 = firebaseDatabase.query(soilRefAlt1, firebaseDatabase.limitToLast(20));
+  const soilQueryAlt2 = firebaseDatabase.query(soilRefAlt2, firebaseDatabase.limitToLast(20));
+  const tiltQuery = firebaseDatabase.query(tiltRef, firebaseDatabase.limitToLast(20));
+  const waterLevelQuery = firebaseDatabase.query(waterLevelRef, firebaseDatabase.limitToLast(20));
     
-    const [bmpSnapshot, mpuSnapshot, tiltSnapshot] = await Promise.all([
+    const [bmpSnapshot, mpuSnapshot, rainSnapshot, soilSnapPrimary, soilSnapAlt1, soilSnapAlt2, tiltSnapshot, waterLevelSnapshot] = await Promise.all([
       firebaseDatabase.get(bmpQuery),
       firebaseDatabase.get(mpuQuery),
-      firebaseDatabase.get(tiltQuery)
+      firebaseDatabase.get(rainQuery),
+      firebaseDatabase.get(soilQueryPrimary),
+      firebaseDatabase.get(soilQueryAlt1),
+      firebaseDatabase.get(soilQueryAlt2),
+      firebaseDatabase.get(tiltQuery),
+      firebaseDatabase.get(waterLevelQuery)
     ]);
+
+    // Choose the first soil snapshot that exists
+    const soilSnapshot = soilSnapAlt1.exists() ? soilSnapAlt1 : (soilSnapPrimary.exists() ? soilSnapPrimary : (soilSnapAlt2.exists() ? soilSnapAlt2 : soilSnapPrimary));
     
+    // Process the soil data to ensure it's in the expected format
+    let processedSoilData = {};
+    if (soilSnapshot && soilSnapshot.exists()) {
+      const rawData = soilSnapshot.val();
+      // Check if the data is already in the expected format (object with numeric keys)
+      if (typeof rawData === 'object' && rawData !== null) {
+        if (Object.keys(rawData).length > 0 && Object.keys(rawData).every(k => !isNaN(Number(k)))) {
+          // Data is already in expected format
+          processedSoilData = rawData;
+        } else {
+          // Convert to expected format if it's a single reading or different structure
+          // Create at least one entry with a timestamp
+          const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+          processedSoilData = { '1': { ...rawData, timestamp } };
+        }
+      }
+    }
+    
+    // Helper to get a readable location string from a reading record
+    const getLocationString = (rec) => {
+      if (!rec || typeof rec !== 'object') return '';
+      const flat = [
+        rec.location,
+        rec.Location,
+        rec.loc,
+        rec.place,
+        rec.site,
+        rec.area,
+        rec.city,
+        rec.district,
+        rec.region,
+        rec.town
+      ];
+      const flatStr = flat.find(v => typeof v === 'string' && v.trim());
+      if (flatStr) return flatStr.trim();
+      const locObj = typeof rec.location === 'object' && rec.location !== null ? rec.location : null;
+      if (locObj) {
+        const { name, city, district, area, region, town } = locObj;
+        const parts = [name, city, district, area, region, town].filter(s => typeof s === 'string' && s.trim());
+        if (parts.length) return parts.join(', ');
+      }
+      if (typeof rec.latitude === 'number' && typeof rec.longitude === 'number') {
+        return `${rec.latitude}, ${rec.longitude}`;
+      }
+      if (typeof rec.lat === 'number' && typeof rec.lng === 'number') {
+        return `${rec.lat}, ${rec.lng}`;
+      }
+      return '';
+    };
+
+    // Helper to pick latest record by timestamp or numeric-like key
+    const getLatestFromMap = (mapObj) => {
+      if (!mapObj || typeof mapObj !== 'object') return null;
+      const entries = Object.entries(mapObj);
+      if (entries.length === 0) return null;
+      const withTs = entries.map(([k, v]) => {
+        let t = 0;
+        if (v && typeof v === 'object' && v.timestamp) {
+          const d = new Date(v.timestamp);
+          if (!isNaN(d.getTime())) t = d.getTime();
+        }
+        return { k, v, t };
+      });
+      const anyTs = withTs.some(e => e.t > 0);
+      if (anyTs) {
+        withTs.sort((a, b) => a.t - b.t);
+        return withTs[withTs.length - 1].v;
+      }
+      const parsed = entries.map(([k, v]) => {
+        const n = Number(k);
+        return { k, v, n: Number.isFinite(n) ? n : null };
+      });
+      const numericOnly = parsed.filter(e => e.n !== null);
+      if (numericOnly.length > 0) {
+        numericOnly.sort((a, b) => a.n - b.n);
+        return numericOnly[numericOnly.length - 1].v;
+      }
+      return entries[entries.length - 1][1];
+    };
+
+    // Try to get locations from latest readings
+    const rainData = rainSnapshot.exists() ? rainSnapshot.val() : {};
+  const soilData = soilSnapshot && soilSnapshot.exists() ? soilSnapshot.val() : {};
+    const latestRain = getLatestFromMap(rainData);
+    const latestSoil = getLatestFromMap(soilData);
+    let rainLocation = getLocationString(latestRain);
+    let soilLocation = getLocationString(latestSoil);
+
+    // Helper to fetch a location by trying multiple candidate paths
+    const tryFetchLocationFromPaths = async (paths) => {
+      for (const p of paths) {
+        try {
+          const refp = firebaseDatabase.ref(database, p);
+          const snap = await firebaseDatabase.get(refp);
+          if (snap.exists()) {
+            const val = snap.val();
+            const str = typeof val === 'string' ? val : getLocationString(val);
+            if (str) return str;
+          }
+        } catch { /* ignore individual failures */ }
+      }
+      return '';
+    };
+
+    // If still missing soil/rain locations, try ID-based resolution first
+    const idFields = ['deviceId','sensorId','device','node','stationId','id','sensor','station','nodeId','device_id','sensor_id'];
+    const resolveByIds = async (latest) => {
+      if (!latest || typeof latest !== 'object') return '';
+      const ids = idFields.map(f => latest[f]).filter(v => typeof v === 'string' && v.trim());
+      const bases = ['/Devices','/Sensors/Devices','/Sensors/Meta','/Sensors','/SensorNodes','/Nodes','/Stations','/SensorsInfo','/DevicesInfo'];
+      for (const id of ids) {
+        const paths = bases.map(b => `${b}/${id}`);
+        const found = await tryFetchLocationFromPaths(paths);
+        if (found) return found;
+      }
+      return '';
+    };
+
+    if (!soilLocation) {
+      soilLocation = await resolveByIds(latestSoil);
+    }
+    if (!rainLocation) {
+      rainLocation = await resolveByIds(latestRain);
+    }
+
+    // Fallback: try common meta nodes with more exhaustive keys
+    const metaBases = ['/Sensors/Locations','/Locations','/Sensors/Meta','/Meta/Sensors','/SensorLocations','/Configs/Sensors','/Meta'];
+    if (!rainLocation || !soilLocation) {
+      for (const base of metaBases) {
+        const candidates = [
+          `${base}/Rain`, `${base}/rain`, `${base}/RainSensor`, `${base}/rainSensor`, `${base}/RainReadings`,
+          `${base}/Soil`, `${base}/soil`, `${base}/SoilSensor`, `${base}/soilSensor`, `${base}/SoilReadings`
+        ];
+        try {
+          // Try batch-like sequential attempts
+          const found = await tryFetchLocationFromPaths(candidates);
+          if (found) {
+            if (!rainLocation && /rain/i.test(found) === false) {
+              // If this is a generic string, still accept
+              rainLocation = rainLocation || found;
+            }
+            if (!soilLocation) soilLocation = found; // we'll refine below
+          }
+        } catch { /* ignore */ }
+        if (rainLocation && soilLocation) break;
+      }
+    }
+
+    // As a final fallback, try explicit soil/rain location nodes
+    const SOIL_LOC_PATH = process.env.SOIL_LOCATION_PATH;
+    const RAIN_LOC_PATH = process.env.RAIN_LOCATION_PATH;
+    if (!soilLocation) {
+      const paths = ['/SoilLocation','/Soil/location','/Soil/Location','/Sensors/Soil/location','/Sensors/Soil/Location'];
+      if (SOIL_LOC_PATH && typeof SOIL_LOC_PATH === 'string') paths.unshift(SOIL_LOC_PATH);
+      soilLocation = await tryFetchLocationFromPaths(paths);
+    }
+    if (!rainLocation) {
+      const paths = ['/RainLocation','/Rain/location','/Rain/Location','/Sensors/Rain/location','/Sensors/Rain/Location'];
+      if (RAIN_LOC_PATH && typeof RAIN_LOC_PATH === 'string') paths.unshift(RAIN_LOC_PATH);
+      rainLocation = await tryFetchLocationFromPaths(paths);
+    }
+
     return {
       success: true,
       data: {
         bmp180: bmpSnapshot.exists() ? bmpSnapshot.val() : {},
         mpu6050: mpuSnapshot.exists() ? mpuSnapshot.val() : {},
-        tilt: tiltSnapshot.exists() ? tiltSnapshot.val() : {}
+        rain: rainSnapshot.exists() ? rainSnapshot.val() : {},
+        soil: processedSoilData, // Use the processed soil data
+        tilt: tiltSnapshot.exists() ? tiltSnapshot.val() : {},
+        waterLevel: waterLevelSnapshot.exists() ? waterLevelSnapshot.val() : {},
+        locations: { 
+          rain: rainLocation || '', 
+          soil: soilLocation || '',
+          waterLevel: 'Gampaha' // Hardcoded for this example, can be dynamic in the future
+        },
+        debug: {
+          soilPath: soilSnapshot.exists() ? soilSnapshot.ref.toString() : 'N/A',
+          soilRawCount: soilSnapshot.exists() ? Object.keys(soilSnapshot.val() || {}).length : 0,
+          processedSoilCount: Object.keys(processedSoilData).length
+        }
       }
     };
   } catch (error) {
@@ -167,21 +362,32 @@ async function fetchAllSensorData() {
     
     const firebaseDatabase = await import('firebase/database');
     
-    const bmpRef = firebaseDatabase.ref(database, '/Sensors/BMP180Readings');
-    const mpuRef = firebaseDatabase.ref(database, '/Sensors/MPU6050Readings');
-    const tiltRef = firebaseDatabase.ref(database, '/Sensors/TiltReadings');
+  const bmpRef = firebaseDatabase.ref(database, '/Sensors/BMP180Readings');
+  const mpuRef = firebaseDatabase.ref(database, '/Sensors/MPU6050Readings');
+  const rainRef = firebaseDatabase.ref(database, '/Sensors/RainReadings');
+  const soilRefPrimary = firebaseDatabase.ref(database, '/Sensors/SoilReadings');
+  const soilRefAlt1 = firebaseDatabase.ref(database, '/SoilMoistureReadings');
+  const soilRefAlt2 = firebaseDatabase.ref(database, '/Sensors/SoilMoistureReadings');
+  const tiltRef = firebaseDatabase.ref(database, '/Sensors/TiltReadings');
     
-    const [bmpSnapshot, mpuSnapshot, tiltSnapshot] = await Promise.all([
+    const [bmpSnapshot, mpuSnapshot, rainSnapshot, soilSnapPrimary, soilSnapAlt1, soilSnapAlt2, tiltSnapshot] = await Promise.all([
       firebaseDatabase.get(bmpRef),
       firebaseDatabase.get(mpuRef),
+      firebaseDatabase.get(rainRef),
+      firebaseDatabase.get(soilRefPrimary),
+      firebaseDatabase.get(soilRefAlt1),
+      firebaseDatabase.get(soilRefAlt2),
       firebaseDatabase.get(tiltRef)
     ]);
+    const soilSnapshot = soilSnapAlt1.exists() ? soilSnapAlt1 : (soilSnapPrimary.exists() ? soilSnapPrimary : (soilSnapAlt2.exists() ? soilSnapAlt2 : soilSnapPrimary));
     
     return {
       success: true,
       data: {
-        bmp180: bmpSnapshot.exists() ? bmpSnapshot.val() : {},
-        mpu6050: mpuSnapshot.exists() ? mpuSnapshot.val() : {},
+  bmp180: bmpSnapshot.exists() ? bmpSnapshot.val() : {},
+  mpu6050: mpuSnapshot.exists() ? mpuSnapshot.val() : {},
+  rain: rainSnapshot.exists() ? rainSnapshot.val() : {},
+  soil: soilSnapshot && soilSnapshot.exists() ? soilSnapshot.val() : {},
         tilt: tiltSnapshot.exists() ? tiltSnapshot.val() : {}
       }
     };

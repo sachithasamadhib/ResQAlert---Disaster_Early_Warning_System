@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Disaster Management Admin Panel</title>
-    <script src="node_modules/chart.js/dist/chart.umd.js"></script>
+  <script src="node_modules/chart.js/dist/chart.umd.js"></script>
     <style>
       * {
         margin: 0;
@@ -48,7 +48,7 @@
         font-weight: 600;
       }
 
-      .status-indicator {
+  .status-indicator {
         display: flex;
         align-items: center;
         gap: 10px;
@@ -257,10 +257,9 @@
       }
 
       .controls {
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
       }
 
       .refresh-btn {
@@ -279,227 +278,30 @@
         transform: translateY(-2px);
       }
 
-      .alert-section {
-        grid-column: 1 / -1;
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: white;
-      }
+  /* Header actions: notifications + controls */
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .icon-btn { position: relative; background: #ffffff; border: 2px solid #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+  .icon-btn:hover { background: #f8fafc; transform: translateY(-1px); }
+  .notif-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .notif-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: #fff; font-size: 11px; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+  .notif-panel { position: absolute; top: 55px; right: 0; width: 360px; max-height: 420px; overflow: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); display: none; z-index: 200; }
+  .notif-header { padding: 12px 14px; border-bottom: 1px solid #e5e7eb; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .notif-list { padding: 8px 0; }
+  .notif-item { padding: 10px 14px; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #f1f5f9; }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-type { width: 8px; height: 24px; border-radius: 4px; margin-top: 2px; }
+  .notif-time { font-size: 11px; color: #64748b; }
+  .status-text { font-size: 13px; color: #334155; }
 
-      .alert-section .card-title {
-        color: white;
-      }
+  /* Modal styles */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 300; }
+  .modal { width: min(1000px, 92%); background: #fff; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
+  .modal-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; }
+  .modal-title { font-weight: 700; color: #111827; }
+  .modal-body { padding: 16px; height: 520px; }
+  .close-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; }
 
-      .alert-item {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      /* User Management Styles */
-      .user-management-section {
-        grid-column: 1 / -1;
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-        color: white;
-      }
-
-      .user-management-section .card-title {
-        color: white;
-      }
-
-      .user-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 15px;
-        margin-bottom: 25px;
-      }
-
-      .user-stat {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .user-stat-number {
-        font-size: 2em;
-        font-weight: 700;
-        display: block;
-        margin-bottom: 5px;
-      }
-
-      .user-stat-label {
-        font-size: 0.9em;
-        opacity: 0.9;
-      }
-
-      .user-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 15px;
-        margin-bottom: 25px;
-      }
-
-      .user-card {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
-      }
-
-      .user-card:hover {
-        background: rgba(255, 255, 255, 0.15);
-        transform: translateY(-2px);
-      }
-
-      .user-header {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 15px;
-      }
-
-      .user-avatar {
-        font-size: 2.5em;
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-      }
-
-      .user-info h3 {
-        margin: 0;
-        font-size: 1.2em;
-        font-weight: 600;
-      }
-
-      .user-role {
-        font-size: 0.9em;
-        opacity: 0.8;
-        margin: 2px 0;
-      }
-
-      .user-status {
-        display: inline-block;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.8em;
-        font-weight: 600;
-        margin-top: 5px;
-      }
-
-      .status-active {
-        background: rgba(16, 185, 129, 0.3);
-        color: #dcfce7;
-      }
-
-      .status-offline {
-        background: rgba(107, 114, 128, 0.3);
-        color: #f3f4f6;
-      }
-
-      .status-training {
-        background: rgba(245, 158, 11, 0.3);
-        color: #fef3c7;
-      }
-
-      .user-details {
-        margin-top: 15px;
-        font-size: 0.9em;
-      }
-
-      .user-details div {
-        margin-bottom: 8px;
-        display: flex;
-        justify-content: space-between;
-      }
-
-      .user-permissions {
-        margin-top: 15px;
-      }
-
-      .permission-tag {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.8em;
-        margin: 2px 4px 2px 0;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .activity-log {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .activity-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .activity-item:last-child {
-        border-bottom: none;
-      }
-
-      .activity-info {
-        flex: 1;
-      }
-
-      .activity-user {
-        font-weight: 600;
-        font-size: 0.9em;
-      }
-
-      .activity-action {
-        font-size: 0.95em;
-        margin: 2px 0;
-      }
-
-      .activity-details {
-        font-size: 0.8em;
-        opacity: 0.7;
-      }
-
-      .activity-time {
-        font-size: 0.8em;
-        opacity: 0.8;
-        text-align: right;
-        min-width: 120px;
-      }
-
-      .activity-severity {
-        width: 8px;
-        height: 40px;
-        border-radius: 4px;
-        margin-right: 15px;
-      }
-
-      .severity-info {
-        background: #3b82f6;
-      }
-
-      .severity-warning {
-        background: #f59e0b;
-      }
-
-      .severity-critical {
-        background: #ef4444;
-      }
+  /* Removed user management & large alert styles */
 
       @media (max-width: 768px) {
         .main-container {
@@ -544,47 +346,36 @@
           <span style="font-size: 2em;">🚨</span>
           <h1>Disaster Management Control Center</h1>
         </div>
-        <div class="status-indicator">
-          <div class="status-dot"></div>
-          <span id="connectionStatus">System Online</span>
+        <div class="header-actions">
+          <div class="status-indicator">
+            <div class="status-dot"></div>
+            <span id="connectionStatus">System Online</span>
+          </div>
+          <button id="refreshDataBtn" class="icon-btn" title="Refresh data">🔄 Refresh</button>
+          <button id="testConnectionBtn" class="icon-btn" title="Test Firebase connection">🧪 Test</button>
+          <div style="position: relative;">
+            <button id="notifButton" class="icon-btn notif-btn" title="Alerts">🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
+            <div id="notifPanel" class="notif-panel">
+              <div class="notif-header">
+                <span>Notifications</span>
+                <button id="clearAlertsBtn" class="icon-btn" style="padding:6px 10px;">Clear</button>
+              </div>
+              <div id="notifList" class="notif-list"></div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
 
     <div class="main-container">
-      <!-- Connection Testing Section -->
-      <div class="card connection-section">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="card-icon">🔥</span>
-            Firebase Connection Control
-          </div>
-        </div>
-        <p style="margin-bottom: 20px;">Monitor and test your connection to the Firebase Realtime Database</p>
-        <div class="controls">
-          <button id="testConnectionBtn" class="btn">Test Connection</button>
-          <button id="refreshDataBtn" class="refresh-btn">Refresh Data</button>
-        </div>
-        <div id="statusMessage" class="status-message"></div>
-      </div>
-
-      <!-- Alert Section -->
-      <div id="alertSection" class="card alert-section" style="display: none;">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="card-icon">⚠️</span>
-            Active Alerts
-          </div>
-        </div>
-        <div id="alertsList"></div>
-      </div>
+      <div id="statusMessage" class="status-message" style="grid-column: 1 / -1;"></div>
 
       <!-- BMP180 Environmental Sensor -->
       <div class="card normal-card" id="bmp180Card">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌡️</span>
-            Environmental Monitor
+            BMP180 Environmental Readings
           </div>
           <div class="sensor-location">Gampaha</div>
         </div>
@@ -602,7 +393,7 @@
             <div class="metric-label">Altitude (m)</div>
           </div>
         </div>
-        <div class="chart-container">
+    <div class="chart-container">
           <canvas id="bmp180Chart"></canvas>
         </div>
         <div class="last-updated" id="bmp180LastUpdated">Last updated: --</div>
@@ -613,7 +404,7 @@
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">📊</span>
-            Seismic Activity Monitor
+      MPU6050 IMU Readings
           </div>
           <div class="sensor-location">Rathnapura</div>
         </div>
@@ -637,12 +428,62 @@
         <div class="last-updated" id="mpu6050LastUpdated">Last updated: --</div>
       </div>
 
+      <!-- Rain Sensor -->
+      <div class="card normal-card" id="rainCard">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">🌧️</span>
+            Rainfall Sensor Readings
+          </div>
+          <div class="sensor-location" id="rainLocation">Unknown</div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-value" id="rainIntensity">--</span>
+            <div class="metric-label">Rain Intensity</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="rainStatus">--</span>
+            <div class="metric-label">Status</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="rainChart"></canvas>
+        </div>
+        <div class="last-updated" id="rainLastUpdated">Last updated: --</div>
+      </div>
+
+      <!-- Soil Moisture Sensor -->
+      <div class="card normal-card" id="soilCard">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">🌱</span>
+            Soil Moisture Readings
+          </div>
+          <div class="sensor-location" id="soilLocation">Unknown</div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-value" id="soilMoisture">--</span>
+            <div class="metric-label">Moisture (%)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="soilStatus">--</span>
+            <div class="metric-label">Status</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="soilChart"></canvas>
+        </div>
+        <div class="last-updated" id="soilLastUpdated">Last updated: --</div>
+      </div>
+
       <!-- Tilt Sensor -->
       <div class="card normal-card" id="tiltCard">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">⚖️</span>
-            Landslide Detection
+            Tilt Sensor Readings
           </div>
           <div class="sensor-location">Rathnapura</div>
         </div>
@@ -662,74 +503,60 @@
         <div class="last-updated" id="tiltLastUpdated">Last updated: --</div>
       </div>
 
-      <!-- User Management Section -->
-      <div class="card user-management-section">
+      <!-- Water Level Sensor -->
+      <div class="card normal-card" id="waterLevelCard">
         <div class="card-header">
           <div class="card-title">
-            <span class="card-icon">👥</span>
-            User Management & Activity
+            <span class="card-icon">💧</span>
+            Water Level Readings
+          </div>
+          <div class="sensor-location" id="waterLevelLocation">Gampaha</div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-value" id="waterLevelValue">--</span>
+            <div class="metric-label">Water Level (%)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="waterLevelStatus">--</span>
+            <div class="metric-label">Status</div>
           </div>
         </div>
-        
-        <!-- User Statistics -->
-        <div class="user-stats">
-          <div class="user-stat">
-            <span class="user-stat-number" id="totalUsers">--</span>
-            <div class="user-stat-label">Total Users</div>
-          </div>
-          <div class="user-stat">
-            <span class="user-stat-number" id="activeUsers">--</span>
-            <div class="user-stat-label">Active</div>
-          </div>
-          <div class="user-stat">
-            <span class="user-stat-number" id="offlineUsers">--</span>
-            <div class="user-stat-label">Offline</div>
-          </div>
-          <div class="user-stat">
-            <span class="user-stat-number" id="trainingUsers">--</span>
-            <div class="user-stat-label">Training</div>
-          </div>
+        <div class="chart-container">
+          <canvas id="waterLevelChart"></canvas>
         </div>
-
-        <!-- User Grid -->
-        <div class="user-grid" id="userGrid">
-          <!-- Users will be populated here -->
-        </div>
-
-        <!-- Activity Log -->
-        <div class="activity-log">
-          <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-            <span>📋</span>
-            Recent Activity Log
-          </h3>
-          <div id="activityLog">
-            <!-- Activity items will be populated here -->
-          </div>
-        </div>
+        <div class="last-updated" id="waterLevelLastUpdated">Last updated: --</div>
       </div>
     </div>
 
     <script>
       // Global variables
-      let bmp180Chart, mpu6050Chart, tiltChart;
+      let bmp180Chart, mpu6050Chart, tiltChart, rainChart, soilChart, waterLevelChart;
       let sensorData = {
         bmp180: {},
         mpu6050: {},
-        tilt: {}
+        rain: {},
+        soil: {},
+        tilt: {},
+        waterLevel: {}
       };
-      let userData = {
-        users: [],
-        activity: []
-      };
+
+  let alerts = [];
+  let sensorLocations = { rain: '', soil: '', waterLevel: '' };
 
       // DOM elements
-      const testBtn = document.getElementById('testConnectionBtn');
-      const refreshBtn = document.getElementById('refreshDataBtn');
+  const testBtn = document.getElementById('testConnectionBtn');
+  const refreshBtn = document.getElementById('refreshDataBtn');
       const statusDiv = document.getElementById('statusMessage');
       const connectionStatus = document.getElementById('connectionStatus');
+  const notifBtn = document.getElementById('notifButton');
+  const notifBadge = document.getElementById('notifBadge');
+  const notifPanel = document.getElementById('notifPanel');
+  const notifList = document.getElementById('notifList');
+  const clearAlertsBtn = document.getElementById('clearAlertsBtn');
 
       // Initialize charts
-      function initializeCharts() {
+  function initializeCharts() {
         // BMP180 Chart
         const bmp180Ctx = document.getElementById('bmp180Chart').getContext('2d');
         bmp180Chart = new Chart(bmp180Ctx, {
@@ -778,7 +605,7 @@
           }
         });
 
-        // MPU6050 Chart
+  // MPU6050 Chart
         const mpu6050Ctx = document.getElementById('mpu6050Chart').getContext('2d');
         mpu6050Chart = new Chart(mpu6050Ctx, {
           type: 'line',
@@ -817,6 +644,49 @@
               legend: { display: true },
               title: { display: true, text: 'Seismic Activity Monitoring' }
             }
+          }
+        });
+
+        // Rain Chart (supports boolean or numeric intensity)
+        const rainCtx = document.getElementById('rainChart').getContext('2d');
+        rainChart = new Chart(rainCtx, {
+          type: 'line',
+          data: { labels: [], datasets: [{ label: 'Rain', data: [], borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.12)', fill: true }] },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Rain (mm or 0/1)' } } }, plugins: { legend: { display: true }, title: { display: true, text: 'Rainfall Trends' } } }
+        });
+
+        // Soil Moisture Chart
+        const soilCtx = document.getElementById('soilChart').getContext('2d');
+        console.log("Initializing soil chart");
+        soilChart = new Chart(soilCtx, {
+          type: 'line',
+          data: { 
+            labels: [], 
+            datasets: [{ 
+              label: 'Moisture %', 
+              data: [], 
+              borderColor: '#22c55e', 
+              backgroundColor: 'rgba(34, 197, 94, 0.12)', 
+              fill: true 
+            }] 
+          },
+          options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+              y: { 
+                min: 0, 
+                max: 100, 
+                title: { 
+                  display: true, 
+                  text: 'Moisture (%)' 
+                } 
+              } 
+            }, 
+            plugins: { 
+              legend: { display: true }, 
+              title: { display: true, text: 'Soil Moisture Trends' } 
+            } 
           }
         });
 
@@ -859,94 +729,259 @@
             }
           }
         });
-      }
 
-      // Update user management displays
-      function updateUserManagement() {
-        // Update user statistics
-        document.getElementById('totalUsers').textContent = userData.totalUsers || '--';
-        document.getElementById('activeUsers').textContent = userData.activeUsers || '--';
-        document.getElementById('offlineUsers').textContent = userData.offlineUsers || '--';
-        document.getElementById('trainingUsers').textContent = userData.trainingUsers || '--';
-
-        // Update user grid
-        const userGrid = document.getElementById('userGrid');
-        if (userData.users && userData.users.length > 0) {
-          userGrid.innerHTML = userData.users.map(user => `
-            <div class="user-card">
-              <div class="user-header">
-                <div class="user-avatar">${user.avatar}</div>
-                <div class="user-info">
-                  <h3>${user.name}</h3>
-                  <div class="user-role">${user.role}</div>
-                  <span class="user-status status-${user.status.toLowerCase()}">${user.status}</span>
-                </div>
-              </div>
-              <div class="user-details">
-                <div>
-                  <span>📧 Email:</span>
-                  <span>${user.email}</span>
-                </div>
-                <div>
-                  <span>📍 Location:</span>
-                  <span>${user.location}</span>
-                </div>
-                <div>
-                  <span>🕐 Last Login:</span>
-                  <span>${user.lastLogin}</span>
-                </div>
-              </div>
-              <div class="user-permissions">
-                <strong>Permissions:</strong><br>
-                ${user.permissions.map(permission => 
-                  `<span class="permission-tag">${permission}</span>`
-                ).join('')}
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Update activity log
-        const activityLog = document.getElementById('activityLog');
-        if (userData.activity && userData.activity.length > 0) {
-          activityLog.innerHTML = userData.activity.map(activity => `
-            <div class="activity-item">
-              <div class="activity-severity severity-${activity.severity}"></div>
-              <div class="activity-info">
-                <div class="activity-user">${activity.userName}</div>
-                <div class="activity-action">${activity.action}</div>
-                <div class="activity-details">${activity.details}</div>
-              </div>
-              <div class="activity-time">${activity.timestamp}</div>
-            </div>
-          `).join('');
-        }
-      }
-
-      // Fetch user management data
-      async function fetchUserData() {
-        try {
-          const [usersResult, activityResult] = await Promise.all([
-            window.electronAPI.getUsersData(),
-            window.electronAPI.getUserActivity()
-          ]);
-
-          if (usersResult.success) {
-            userData = { ...userData, ...usersResult.data };
+        // Water Level Chart
+        const waterLevelCtx = document.getElementById('waterLevelChart').getContext('2d');
+        waterLevelChart = new Chart(waterLevelCtx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Water Level (%)',
+                data: [],
+                borderColor: '#0ea5e9',
+                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                min: 0,
+                max: 100,
+                title: { display: true, text: 'Water Level (%)' }
+              }
+            },
+            plugins: {
+              legend: { display: true },
+              title: { display: true, text: 'Water Level Trends' }
+            }
           }
-
-          if (activityResult.success) {
-            userData.activity = activityResult.data;
-          }
-
-          updateUserManagement();
-        } catch (error) {
-          console.error('Failed to fetch user data:', error);
-        }
+        });
       }
+
+      // Helpers to normalize sensor values
+      function getSoilMoistureValue(rec) {
+        console.log("Processing soil record:", JSON.stringify(rec).substring(0, 200) + "...");
+        if (!rec || typeof rec !== 'object') {
+          console.log("Invalid soil record, returning 0");
+          return 0;
+        }
+        const toNum = (v) => (typeof v === 'number' ? v : (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)) ? Number(v) : null));
+        const candidates = [
+          rec.moisture,
+          rec.moisturePercent,
+          rec.moisture_percentage,
+          rec.moisture_pct,
+          rec.soilMoisture,
+          rec.soil_moisture,
+          rec.soil,
+          rec.value
+        ];
+        console.log("Moisture candidates:", candidates);
+        let v = candidates.find(x => typeof x === 'number');
+        console.log("Found direct numeric value:", v);
+        // Handle common soil sensor shapes: analog 0-4095, digital 0/1
+        const analogRaw = toNum(rec.analog);
+        console.log("Analog raw value:", analogRaw);
+        if (v === undefined && analogRaw !== null) {
+          // Many soil sensors read lower analog = wetter; convert to % moisture
+          const raw = Math.max(0, Math.min(4095, analogRaw));
+          const pct = Math.max(0, Math.min(100, Math.round((1 - (raw / 4095)) * 100)));
+          console.log(`Converting analog ${raw} to percentage: ${pct}%`);
+          v = pct;
+        }
+        const digitalRaw = toNum(rec.digital);
+        console.log("Digital raw value:", digitalRaw);
+        if (v === undefined && digitalRaw !== null) {
+          // If digital 1=wet, map to 100 or 0
+          v = Number(digitalRaw) === 1 ? 100 : 0;
+          console.log(`Converting digital ${digitalRaw} to percentage: ${v}%`);
+        }
+        if (v === undefined && typeof rec.value === 'string') {
+          const n = Number(rec.value);
+          console.log("Trying to parse string value:", rec.value, "Result:", n);
+          if (!Number.isNaN(n)) v = n;
+        }
+        v = typeof v === 'number' ? v : 0;
+        if (v > 100 && v <= 1023) { // raw analog range, scale to %
+          console.log(`Scaling raw analog ${v} to percentage`);
+          v = Math.round((v / 1023) * 100);
+        }
+        if (v < 0) v = 0; if (v > 100) v = 100;
+        console.log("Final soil moisture value:", v);
+        return v;
+      }
+
+      // Process water level data
+      function getWaterLevelValue(rec) {
+        if (!rec || typeof rec !== 'object') return 0;
+        const toNum = (v) => (typeof v === 'number' ? v : (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)) ? Number(v) : null));
+        
+        // Try different property names for water level
+        const candidates = [
+          rec.WaterLevelPercentage,
+          rec.waterLevelPercentage,
+          rec.waterLevel,
+          rec.water_level,
+          rec.level,
+          rec.levelPercentage,
+          rec.value
+        ];
+        
+        let v = candidates.find(x => typeof x === 'number');
+        
+        // Try to parse string values
+        if (v === undefined && typeof rec.value === 'string') {
+          const n = Number(rec.value);
+          if (!Number.isNaN(n)) v = n;
+        }
+        
+        v = typeof v === 'number' ? v : 0;
+        if (v < 0) v = 0; if (v > 100) v = 100;
+        return v;
+      }
+
+      // Get water level status based on percentage
+      function getWaterLevelStatus(percentage) {
+        if (percentage >= 80) return 'High';
+        if (percentage >= 50) return 'Medium';
+        return 'Low';
+      }
+
+      // Determine soil condition/category from analog or moisture percent
+      function getSoilCondition(rec, moisturePct) {
+        let category = 'Moist';
+        let level = 'Medium';
+        if (rec && typeof rec.analog === 'number') {
+          const raw = Math.max(0, Math.min(4095, rec.analog));
+          if (raw >= 3000) { category = 'Dry'; level = 'Low'; }
+          else if (raw >= 1500) { category = 'Moist'; level = 'Medium'; }
+          else { category = 'Wet'; level = 'High'; }
+          return { category, level };
+        }
+        // Fallback based on % if analog not available
+        const pct = typeof moisturePct === 'number' ? moisturePct : 0;
+        if (pct < 30) { category = 'Dry'; level = 'Low'; }
+        else if (pct < 60) { category = 'Moist'; level = 'Medium'; }
+        else { category = 'Wet'; level = 'High'; }
+        return { category, level };
+      }
+
+      function getRainIntensity(rec) {
+        if (!rec || typeof rec !== 'object') return 0;
+        const candidates = [
+          rec.intensity,
+          rec.mm,
+          rec.rain_mm,
+          rec.value
+        ];
+        let v = candidates.find(x => typeof x === 'number');
+        if (v === undefined) {
+          if (rec.rainDetected === true || rec.isRaining === true) return 1;
+          if (rec.value === '1') return 1;
+        }
+        return typeof v === 'number' ? v : 0;
+      }
+
+      // Try to extract a human-readable location string from a reading
+      function getLocationString(rec) {
+        if (!rec || typeof rec !== 'object') return '';
+        // Common flat string fields
+        const flat = [
+          rec.location,
+          rec.Location,
+          rec.loc,
+          rec.place,
+          rec.site,
+          rec.area,
+          rec.city,
+          rec.district,
+          rec.region,
+          rec.town
+        ];
+        const flatStr = flat.find(v => typeof v === 'string' && v.trim());
+        if (flatStr) return flatStr.trim();
+
+        // Nested location object
+        const locObj = typeof rec.location === 'object' && rec.location !== null ? rec.location : null;
+        if (locObj) {
+          const { name, city, district, area, region, town } = locObj;
+          const parts = [name, city, district, area, region, town].filter(s => typeof s === 'string' && s.trim());
+          if (parts.length) return parts.join(', ');
+        }
+
+        // Coordinates fallback (flat)
+        const latKeys = ['latitude','lat'];
+        const lonKeys = ['longitude','lng','long'];
+        const numOrNumStr = (v) => (typeof v === 'number' ? v : (typeof v === 'string' && !isNaN(Number(v)) ? Number(v) : null));
+        for (const la of latKeys) {
+          for (const lo of lonKeys) {
+            const lat = numOrNumStr(rec[la]);
+            const lon = numOrNumStr(rec[lo]);
+            if (lat !== null && lon !== null) return `${lat}, ${lon}`;
+          }
+        }
+
+        // Coordinates fallback (nested: gps/GPS/coordinates/coords)
+        const nestedKeys = ['gps','GPS','coordinates','coords'];
+        for (const k of nestedKeys) {
+          const obj = rec[k];
+          if (obj && typeof obj === 'object') {
+            for (const la of latKeys) {
+              for (const lo of lonKeys) {
+                const lat = numOrNumStr(obj[la]);
+                const lon = numOrNumStr(obj[lo]);
+                if (lat !== null && lon !== null) return `${lat}, ${lon}`;
+              }
+            }
+          }
+        }
+        return '';
+      }
+
+      // Helper: pick latest record from a map by timestamp property or by key if numeric-like
+      function getLatestFromMap(mapObj) {
+        if (!mapObj || typeof mapObj !== 'object') return null;
+        const entries = Object.entries(mapObj);
+        if (entries.length === 0) return null;
+        // Prefer timestamp parsing
+        const withTs = entries
+          .map(([k, v]) => {
+            let t = 0;
+            if (v && typeof v === 'object' && v.timestamp) {
+              const d = new Date(v.timestamp);
+              if (!isNaN(d.getTime())) t = d.getTime();
+            }
+            return { k, v, t };
+          });
+        const anyTs = withTs.some(e => e.t > 0);
+        if (anyTs) {
+          withTs.sort((a, b) => a.t - b.t);
+          return withTs[withTs.length - 1].v;
+        }
+        // Fallback: sort by numeric-like key
+        const parsed = entries.map(([k, v]) => {
+          const n = Number(k);
+          return { k, v, n: Number.isFinite(n) ? n : null };
+        });
+        const numericOnly = parsed.filter(e => e.n !== null);
+        if (numericOnly.length > 0) {
+          numericOnly.sort((a, b) => a.n - b.n);
+          return numericOnly[numericOnly.length - 1].v;
+        }
+        // Last entry fallback
+        return entries[entries.length - 1][1];
+      }
+
+  // Removed user management functions
 
       // Update chart data
-      function updateCharts() {
+  function updateCharts() {
         // Update BMP180 chart
         if (sensorData.bmp180 && Object.keys(sensorData.bmp180).length > 0) {
           const bmpEntries = Object.entries(sensorData.bmp180)
@@ -989,6 +1024,50 @@
           mpu6050Chart.update();
         }
 
+        // Update Rain chart
+        if (sensorData.rain && Object.keys(sensorData.rain).length > 0) {
+          const entries = Object.entries(sensorData.rain).slice(-20);
+          const labels = entries.map(([_, v]) => (v.timestamp ? v.timestamp.split(' ')[1].substring(0,5) : new Date().toLocaleTimeString().substring(0,5)));
+          const data = entries.map(([_, v]) => getRainIntensity(v));
+          rainChart.data.labels = labels;
+          rainChart.data.datasets[0].data = data;
+          rainChart.update();
+        }
+
+        // Update Soil chart
+        if (sensorData.soil && Object.keys(sensorData.soil).length > 0) {
+          console.log("Soil data found:", JSON.stringify(sensorData.soil).substring(0, 200) + "...");
+          
+          // Try to extract entries in the expected format
+          let entries = Object.entries(sensorData.soil).slice(-20);
+          console.log("Soil entries count:", entries.length);
+          
+          // If we don't have valid entries, try to create a synthetic entry for display
+          if (entries.length === 0) {
+            console.log("Creating synthetic soil entry");
+            // Create a synthetic entry if soil data exists but not in expected format
+            const timestamp = new Date().toLocaleTimeString();
+            entries = [['1', { ...sensorData.soil, timestamp }]];
+          }
+          
+          const labels = entries.map(([_, v]) => (v.timestamp ? v.timestamp.split(' ')[1].substring(0,5) : new Date().toLocaleTimeString().substring(0,5)));
+          const data = entries.map(([_, v]) => {
+            const value = getSoilMoistureValue(v);
+            console.log("Soil moisture value calculated:", value, "from entry:", JSON.stringify(v).substring(0, 100) + "...");
+            return value;
+          });
+          
+          console.log("Soil chart data:", data);
+          console.log("Soil chart labels:", labels);
+          
+          soilChart.data.labels = labels;
+          soilChart.data.datasets[0].data = data;
+          soilChart.update();
+        } else {
+          console.log("No soil data available. sensorData.soil exists:", !!sensorData.soil, 
+                     "Length:", sensorData.soil ? Object.keys(sensorData.soil).length : 0);
+        }
+
         // Update Tilt chart
         if (sensorData.tilt && Object.keys(sensorData.tilt).length > 0) {
           const tiltEntries = Object.entries(sensorData.tilt)
@@ -1006,10 +1085,47 @@
           tiltChart.data.datasets[0].data = tiltData;
           tiltChart.update();
         }
+
+        // Update Water Level chart
+        if (sensorData.waterLevel && Object.keys(sensorData.waterLevel).length > 0) {
+          console.log("Water level data found:", JSON.stringify(sensorData.waterLevel).substring(0, 200) + "...");
+          
+          // Try to extract entries in the expected format
+          let entries = Object.entries(sensorData.waterLevel).slice(-20);
+          console.log("Water level entries count:", entries.length);
+          
+          // If we don't have valid entries, try to create a synthetic entry for display
+          if (entries.length === 0) {
+            console.log("Creating synthetic water level entry");
+            // Create a synthetic entry if water level data exists but not in expected format
+            const timestamp = new Date().toLocaleTimeString();
+            entries = [['1', { ...sensorData.waterLevel, timestamp }]];
+          }
+          
+          const labels = entries.map(([_, v]) => (v.time || v.timestamp) ? 
+            (v.time || v.timestamp).split(' ')[1].substring(0,5) : 
+            new Date().toLocaleTimeString().substring(0,5));
+          
+          const data = entries.map(([_, v]) => {
+            const value = getWaterLevelValue(v);
+            console.log("Water level value calculated:", value, "from entry:", JSON.stringify(v).substring(0, 100) + "...");
+            return value;
+          });
+          
+          console.log("Water level chart data:", data);
+          console.log("Water level chart labels:", labels);
+          
+          waterLevelChart.data.labels = labels;
+          waterLevelChart.data.datasets[0].data = data;
+          waterLevelChart.update();
+        } else {
+          console.log("No water level data available. sensorData.waterLevel exists:", !!sensorData.waterLevel, 
+                     "Length:", sensorData.waterLevel ? Object.keys(sensorData.waterLevel).length : 0);
+        }
       }
 
       // Update sensor displays
-      function updateSensorDisplays() {
+  function updateSensorDisplays() {
         // Update BMP180 displays
         if (sensorData.bmp180 && Object.keys(sensorData.bmp180).length > 0) {
           const latestBmp = Object.values(sensorData.bmp180).slice(-1)[0];
@@ -1031,9 +1147,9 @@
               bmp180Card.className = 'card normal-card';
             }
           }
-        }
+  }
 
-        // Update MPU6050 displays
+  // Update MPU6050 displays
         if (sensorData.mpu6050 && Object.keys(sensorData.mpu6050).length > 0) {
           const latestMpu = Object.values(sensorData.mpu6050).slice(-1)[0];
           if (latestMpu) {
@@ -1064,6 +1180,40 @@
           }
         }
 
+        // Update Rain displays
+  if (sensorData.rain && Object.keys(sensorData.rain).length > 0) {
+      const latest = getLatestFromMap(sensorData.rain);
+          if (latest) {
+      const intensity = getRainIntensity(latest);
+      const isRaining = latest.rainDetected === true || latest.isRaining === true || intensity > 0;
+      document.getElementById('rainIntensity').textContent = typeof intensity === 'number' && intensity.toFixed ? intensity.toFixed(2) : intensity;
+            document.getElementById('rainStatus').textContent = isRaining ? 'Raining' : 'No Rain';
+            document.getElementById('rainLastUpdated').textContent = `Last updated: ${latest.timestamp || 'Unknown'}`;
+            const card = document.getElementById('rainCard');
+            card.className = isRaining ? 'card warning-card' : 'card normal-card';
+            const rainLoc = getLocationString(latest) || sensorLocations.rain;
+            const chip = document.getElementById('rainLocation');
+            if (chip) chip.textContent = rainLoc || 'Unknown';
+          }
+        }
+
+        // Update Soil displays
+  if (sensorData.soil && Object.keys(sensorData.soil).length > 0) {
+      const latest = getLatestFromMap(sensorData.soil);
+          if (latest) {
+  const moisture = getSoilMoistureValue(latest);
+    const cond = getSoilCondition(latest, moisture);
+      document.getElementById('soilMoisture').textContent = typeof moisture === 'number' && moisture.toFixed ? moisture.toFixed(1) : moisture;
+    document.getElementById('soilStatus').textContent = `${cond.category} (${cond.level})`;
+            document.getElementById('soilLastUpdated').textContent = `Last updated: ${latest.timestamp || 'Unknown'}`;
+            const card = document.getElementById('soilCard');
+    card.className = cond.category === 'Dry' ? 'card warning-card' : 'card normal-card';
+            const soilLoc = getLocationString(latest) || sensorLocations.soil;
+            const chip = document.getElementById('soilLocation');
+            if (chip) chip.textContent = soilLoc || 'Unknown';
+          }
+        }
+
         // Update Tilt displays
         if (sensorData.tilt && Object.keys(sensorData.tilt).length > 0) {
           const latestTilt = Object.values(sensorData.tilt).slice(-1)[0];
@@ -1085,11 +1235,42 @@
             }
           }
         }
+
+        // Update Water Level displays
+        if (sensorData.waterLevel && Object.keys(sensorData.waterLevel).length > 0) {
+          const latest = getLatestFromMap(sensorData.waterLevel);
+          
+          if (latest) {
+            const waterLevel = getWaterLevelValue(latest);
+            const status = getWaterLevelStatus(waterLevel);
+            
+            document.getElementById('waterLevelValue').textContent = 
+              typeof waterLevel === 'number' && waterLevel.toFixed ? waterLevel.toFixed(1) : waterLevel;
+            document.getElementById('waterLevelStatus').textContent = status;
+            document.getElementById('waterLevelLastUpdated').textContent = 
+              `Last updated: ${latest.time || latest.timestamp || 'Unknown'}`;
+            
+            // Update card status
+            const waterLevelCard = document.getElementById('waterLevelCard');
+            if (status === 'High') {
+              waterLevelCard.className = 'card alert-card';
+            } else if (status === 'Medium') {
+              waterLevelCard.className = 'card warning-card';
+            } else {
+              waterLevelCard.className = 'card normal-card';
+            }
+            
+            // Update location
+            const waterLevelLoc = getLocationString(latest) || sensorLocations.waterLevel;
+            const chip = document.getElementById('waterLevelLocation');
+            if (chip) chip.textContent = waterLevelLoc || 'Unknown';
+          }
+        }
       }
 
       // Check for alerts
       function checkAlerts() {
-        const alerts = [];
+        alerts = [];
         
         // Check BMP180 alerts
         if (sensorData.bmp180 && Object.keys(sensorData.bmp180).length > 0) {
@@ -1141,24 +1322,43 @@
           }
         }
 
-        // Display alerts
-        const alertSection = document.getElementById('alertSection');
-        const alertsList = document.getElementById('alertsList');
-        
-        if (alerts.length > 0) {
-          alertSection.style.display = 'block';
-          alertsList.innerHTML = alerts.map(alert => `
-            <div class="alert-item">
+        // Rain alerts
+        if (sensorData.rain && Object.keys(sensorData.rain).length > 0) {
+          const latest = Object.values(sensorData.rain).slice(-1)[0];
+          const intensity = latest ? (typeof latest.intensity === 'number' ? latest.intensity : (latest.value === 1 ? 1 : 0)) : 0;
+          if (latest && (latest.rainDetected === true || intensity > 0)) {
+            alerts.push({ type: 'info', message: 'Rain detected', time: latest.timestamp });
+          }
+        }
+
+        // Soil alerts
+        if (sensorData.soil && Object.keys(sensorData.soil).length > 0) {
+          const latest = Object.values(sensorData.soil).slice(-1)[0];
+          const moisture = latest ? (typeof latest.moisture === 'number' ? latest.moisture : (typeof latest.value === 'number' ? latest.value : 0)) : 0;
+          if (latest && moisture < 30) {
+            alerts.push({ type: 'warning', message: `Low soil moisture: ${moisture}%`, time: latest.timestamp });
+          }
+        }
+
+        // Update notification UI
+        const sig = alerts.map(a => `${a.type}|${a.message}|${a.time || ''}`).join('||');
+        lastAlertSignature = sig;
+
+        if (alerts.length > 0 && sig !== clearedAlertSignature) {
+          notifBadge.style.display = 'flex';
+          notifBadge.textContent = alerts.length;
+          notifList.innerHTML = alerts.map(a => `
+            <div class="notif-item">
+              <div class="notif-type" style="background:${a.type === 'alert' ? '#ef4444' : a.type === 'warning' ? '#f59e0b' : '#3b82f6'}"></div>
               <div>
-                <strong>${alert.type.toUpperCase()}:</strong> ${alert.message}
-              </div>
-              <div style="font-size: 0.9em; opacity: 0.8;">
-                ${alert.time || 'Unknown time'}
+                <div style="font-weight:600; color:#0f172a;">${a.message}</div>
+                <div class="notif-time">${a.time || 'Unknown time'}</div>
               </div>
             </div>
           `).join('');
         } else {
-          alertSection.style.display = 'none';
+          notifBadge.style.display = 'none';
+          notifList.innerHTML = '<div style="padding:14px; color:#64748b;">No notifications</div>';
         }
       }
 
@@ -1193,57 +1393,127 @@
       }
 
       // Fetch and update sensor data
-      async function refreshData() {
-        refreshBtn.disabled = true;
-        refreshBtn.textContent = 'Loading...';
+      async function refreshData(silent = false) {
+        if (!silent) {
+          refreshBtn.disabled = true;
+          refreshBtn.textContent = 'Loading...';
+        }
         
         try {
           const result = await window.electronAPI.fetchLatestSensorData();
           
           if (result.success) {
+            console.log("Data refresh success. Debug info:", result.data.debug || {});
+            console.log("Soil data exists:", !!result.data.soil);
+            console.log("Soil data keys:", Object.keys(result.data.soil || {}).length);
+            
             sensorData = result.data;
+            if (result.data && result.data.locations) {
+              sensorLocations = { ...sensorLocations, ...result.data.locations };
+            }
             updateSensorDisplays();
             updateCharts();
             checkAlerts();
             
-            // Also fetch user data
-            await fetchUserData();
-            
-            statusDiv.className = 'status-message status-success';
-            statusDiv.textContent = '✅ Data refreshed successfully';
+            if (!silent) {
+              statusDiv.className = 'status-message status-success';
+              statusDiv.textContent = '✅ Data refreshed successfully';
+            }
           } else {
-            statusDiv.className = 'status-message status-error';
-            statusDiv.textContent = '❌ Failed to fetch data: ' + result.message;
+            if (!silent) {
+              statusDiv.className = 'status-message status-error';
+              statusDiv.textContent = '❌ Failed to fetch data: ' + result.message;
+            }
           }
         } catch (error) {
-          statusDiv.className = 'status-message status-error';
-          statusDiv.textContent = '❌ Data fetch failed: ' + error.message;
+          if (!silent) {
+            statusDiv.className = 'status-message status-error';
+            statusDiv.textContent = '❌ Data fetch failed: ' + error.message;
+          }
         }
         
-        refreshBtn.disabled = false;
-        refreshBtn.textContent = 'Refresh Data';
+        if (!silent) {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = '🔄 Refresh';
+        }
       }
 
       // Event listeners
       testBtn.addEventListener('click', testConnection);
-      refreshBtn.addEventListener('click', refreshData);
+  refreshBtn.addEventListener('click', () => refreshData(false));
+      notifBtn.addEventListener('click', () => {
+        notifPanel.style.display = notifPanel.style.display === 'block' ? 'none' : 'block';
+      });
+      document.addEventListener('click', (e) => {
+        if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
+          notifPanel.style.display = 'none';
+        }
+      });
+      let lastAlertSignature = '';
+      let clearedAlertSignature = '';
+      clearAlertsBtn.addEventListener('click', () => {
+        clearedAlertSignature = lastAlertSignature;
+        notifBadge.style.display = 'none';
+        notifList.innerHTML = '<div style="padding:14px; color:#64748b;">No notifications</div>';
+        notifPanel.style.display = 'none';
+      });
+
+      // Card modals for full graphs
+      const modalOverlay = document.createElement('div');
+      modalOverlay.className = 'modal-overlay';
+      modalOverlay.innerHTML = `
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title" id="modalTitle">Sensor Details</div>
+            <button class="close-btn" id="modalClose">✖</button>
+          </div>
+          <div class="modal-body">
+            <canvas id="modalChart"></canvas>
+          </div>
+        </div>`;
+      document.body.appendChild(modalOverlay);
+
+      const modalClose = modalOverlay.querySelector('#modalClose');
+      const modalTitle = modalOverlay.querySelector('#modalTitle');
+      const modalChartCanvas = modalOverlay.querySelector('#modalChart');
+      let modalChartInstance = null;
+
+      function openChartModal(title, baseChart) {
+        modalTitle.textContent = title;
+        if (modalChartInstance) { modalChartInstance.destroy(); }
+        const ctx = modalChartCanvas.getContext('2d');
+        // Clone data shallowly for display
+        const clonedData = JSON.parse(JSON.stringify(baseChart.data));
+        const clonedOptions = JSON.parse(JSON.stringify(baseChart.options));
+        clonedOptions.maintainAspectRatio = false;
+        modalChartInstance = new Chart(ctx, { type: baseChart.config.type, data: clonedData, options: clonedOptions });
+        modalOverlay.style.display = 'flex';
+      }
+
+      modalClose.addEventListener('click', () => { modalOverlay.style.display = 'none'; });
+      modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.style.display = 'none'; });
+
+      // Attach click handlers to cards
+      document.getElementById('bmp180Card').addEventListener('click', () => openChartModal('BMP180 Environmental Readings', bmp180Chart));
+      document.getElementById('mpu6050Card').addEventListener('click', () => openChartModal('MPU6050 IMU Readings', mpu6050Chart));
+      document.getElementById('rainCard').addEventListener('click', () => openChartModal('Rainfall Sensor Readings', rainChart));
+      document.getElementById('soilCard').addEventListener('click', () => openChartModal('Soil Moisture Readings', soilChart));
+      document.getElementById('tiltCard').addEventListener('click', () => openChartModal('Tilt Sensor Readings', tiltChart));
+      document.getElementById('waterLevelCard').addEventListener('click', () => openChartModal('Water Level Readings', waterLevelChart));
 
       // Initialize on page load
       document.addEventListener('DOMContentLoaded', () => {
         initializeCharts();
         
-        // Show initial status
-        statusDiv.className = 'status-message';
-        statusDiv.innerHTML = '💡 Welcome to the Disaster Management Control Center<br>Click "Test Connection" to verify Firebase connectivity';
+  // Show initial status
+  statusDiv.className = 'status-message';
+  statusDiv.innerHTML = '💡 Welcome to the Disaster Management Control Center';
         
-        // Auto-refresh data every 30 seconds
-        setInterval(refreshData, 30000);
+  // Auto-refresh data every 1 second (silent)
+  setInterval(() => refreshData(true), 1000);
         
-        // Initial data load
-        refreshData();
-        
-        // Initial user data load
-        fetchUserData();
+  // Initial data load (silent)
+  refreshData(true);
       });
     </script>
   </body>
