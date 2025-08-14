@@ -1,11 +1,22 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require("electron")
 
-// Expose protected methods that allow the renderer process to use
-// the ipcRenderer without exposing the entire object
-contextBridge.exposeInMainWorld('electronAPI', {
-  testFirebaseConnection: () => ipcRenderer.invoke('test-firebase-connection'),
-  fetchLatestSensorData: () => ipcRenderer.invoke('fetch-latest-sensor-data'),
-  fetchAllSensorData: () => ipcRenderer.invoke('fetch-all-sensor-data'),
-  getUsersData: () => ipcRenderer.invoke('get-users-data'),
-  getUserActivity: () => ipcRenderer.invoke('get-user-activity'),
-});
+contextBridge.exposeInMainWorld("electronAPI", {
+  testFirebaseConnection: () => {
+    console.log("IPC: Testing Firebase connection")
+    return ipcRenderer.invoke("test-firebase-connection")
+  },
+  fetchLatestSensorData: () => {
+    console.log("IPC: Fetching latest sensor data")
+    return ipcRenderer.invoke("fetch-latest-sensor-data")
+  },
+  fetchAllSensorData: () => {
+    console.log("IPC: Fetching all sensor data")
+    return ipcRenderer.invoke("fetch-all-sensor-data")
+  },
+  getUsersData: () => ipcRenderer.invoke("get-users-data"),
+  getUserActivity: () => ipcRenderer.invoke("get-user-activity"),
+  onSensorDataUpdate: (callback) => {
+    ipcRenderer.removeAllListeners("sensor-data-update")
+    ipcRenderer.on("sensor-data-update", (_event, data) => callback(data))
+  },
+})

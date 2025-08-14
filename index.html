@@ -220,9 +220,13 @@
       }
 
       .status-success {
-        background: rgba(16, 185, 129, 0.1);
-        color: #065f46;
-        border: 2px solid rgba(16, 185, 129, 0.3);
+        background: #ecfdf5; /* lighter mint */
+        color: #047857; /* darker teal for contrast */
+        border: 2px solid #34d399;
+        box-shadow: 0 2px 6px rgba(16,185,129,0.15);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       .status-error {
@@ -428,7 +432,7 @@
         <div class="last-updated" id="mpu6050LastUpdated">Last updated: --</div>
       </div>
 
-      <!-- Rain Sensor -->
+  <!-- Rain Sensor -->
       <div class="card normal-card" id="rainCard">
         <div class="card-header">
           <div class="card-title">
@@ -453,6 +457,31 @@
         <div class="last-updated" id="rainLastUpdated">Last updated: --</div>
       </div>
 
+      <!-- Floods Rain Sensor (additional rainfall source) -->
+      <div class="card normal-card" id="floodsRainCard">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">🌧️</span>
+            Floods Rain Sensor Readings
+          </div>
+          <div class="sensor-location" id="floodsRainLocation">Unknown</div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="metric-value" id="floodsRainIntensity">--</span>
+            <div class="metric-label">Rain Intensity</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="floodsRainStatus">--</span>
+            <div class="metric-label">Status</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="floodsRainChart"></canvas>
+        </div>
+        <div class="last-updated" id="floodsRainLastUpdated">Last updated: --</div>
+      </div>
+
       <!-- Soil Moisture Sensor -->
       <div class="card normal-card" id="soilCard">
         <div class="card-header">
@@ -465,7 +494,7 @@
         <div class="metrics-grid">
           <div class="metric">
             <span class="metric-value" id="soilMoisture">--</span>
-            <div class="metric-label">Moisture (%)</div>
+            <div class="metric-label">Moisture (Analog)</div>
           </div>
           <div class="metric">
             <span class="metric-value" id="soilStatus">--</span>
@@ -531,18 +560,19 @@
 
     <script>
       // Global variables
-      let bmp180Chart, mpu6050Chart, tiltChart, rainChart, soilChart, waterLevelChart;
+  let bmp180Chart, mpu6050Chart, tiltChart, rainChart, floodsRainChart, soilChart, waterLevelChart;
       let sensorData = {
         bmp180: {},
         mpu6050: {},
-        rain: {},
+  rain: {},
+  floodsRain: {},
         soil: {},
         tilt: {},
         waterLevel: {}
       };
 
   let alerts = [];
-  let sensorLocations = { rain: '', soil: '', waterLevel: '' };
+  let sensorLocations = { rain: '', floodsRain: '', soil: '', waterLevel: '' };
 
       // DOM elements
   const testBtn = document.getElementById('testConnectionBtn');
@@ -647,15 +677,23 @@
           }
         });
 
-        // Rain Chart (supports boolean or numeric intensity)
+        // Rain Chart (plots raw analog value from rain sensor)
         const rainCtx = document.getElementById('rainChart').getContext('2d');
         rainChart = new Chart(rainCtx, {
           type: 'line',
-          data: { labels: [], datasets: [{ label: 'Rain', data: [], borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.12)', fill: true }] },
-          options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Rain (mm or 0/1)' } } }, plugins: { legend: { display: true }, title: { display: true, text: 'Rainfall Trends' } } }
+          data: { labels: [], datasets: [{ label: 'Rain Analog', data: [], borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.12)', fill: true }] },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Analog Value' } } }, plugins: { legend: { display: true }, title: { display: true, text: 'Rainfall (Analog) Trends' } } }
         });
 
-        // Soil Moisture Chart
+        // Floods Rain Chart
+        const floodsRainCtx = document.getElementById('floodsRainChart').getContext('2d');
+        floodsRainChart = new Chart(floodsRainCtx, {
+          type: 'line',
+          data: { labels: [], datasets: [{ label: 'Floods Rain Analog', data: [], borderColor: '#0e7490', backgroundColor: 'rgba(14, 116, 144, 0.12)', fill: true }] },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Analog Value' } } }, plugins: { legend: { display: true }, title: { display: true, text: 'Floods Rain (Analog) Trends' } } }
+        });
+
+        // Soil Moisture Chart (raw analog values)
         const soilCtx = document.getElementById('soilChart').getContext('2d');
         console.log("Initializing soil chart");
         soilChart = new Chart(soilCtx, {
@@ -663,7 +701,7 @@
           data: { 
             labels: [], 
             datasets: [{ 
-              label: 'Moisture %', 
+              label: 'Analog', 
               data: [], 
               borderColor: '#22c55e', 
               backgroundColor: 'rgba(34, 197, 94, 0.12)', 
@@ -676,16 +714,16 @@
             scales: { 
               y: { 
                 min: 0, 
-                max: 100, 
+                max: 4095, 
                 title: { 
                   display: true, 
-                  text: 'Moisture (%)' 
+                  text: 'Analog Value (0–4095)' 
                 } 
               } 
             }, 
             plugins: { 
               legend: { display: true }, 
-              title: { display: true, text: 'Soil Moisture Trends' } 
+              title: { display: true, text: 'Soil Moisture (Analog) Trends' } 
             } 
           }
         });
@@ -717,7 +755,8 @@
                 ticks: {
                   stepSize: 1,
                   callback: function(value) {
-                    return value === 1 ? 'Tilted' : 'Normal';
+                    // 0 = Tilted, 1 = Normal
+                    return value === 0 ? 'Tilted' : 'Normal';
                   }
                 },
                 title: { display: true, text: 'Tilt Status' }
@@ -765,56 +804,11 @@
       }
 
       // Helpers to normalize sensor values
-      function getSoilMoistureValue(rec) {
-        console.log("Processing soil record:", JSON.stringify(rec).substring(0, 200) + "...");
-        if (!rec || typeof rec !== 'object') {
-          console.log("Invalid soil record, returning 0");
-          return 0;
-        }
-        const toNum = (v) => (typeof v === 'number' ? v : (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)) ? Number(v) : null));
-        const candidates = [
-          rec.moisture,
-          rec.moisturePercent,
-          rec.moisture_percentage,
-          rec.moisture_pct,
-          rec.soilMoisture,
-          rec.soil_moisture,
-          rec.soil,
-          rec.value
-        ];
-        console.log("Moisture candidates:", candidates);
-        let v = candidates.find(x => typeof x === 'number');
-        console.log("Found direct numeric value:", v);
-        // Handle common soil sensor shapes: analog 0-4095, digital 0/1
-        const analogRaw = toNum(rec.analog);
-        console.log("Analog raw value:", analogRaw);
-        if (v === undefined && analogRaw !== null) {
-          // Many soil sensors read lower analog = wetter; convert to % moisture
-          const raw = Math.max(0, Math.min(4095, analogRaw));
-          const pct = Math.max(0, Math.min(100, Math.round((1 - (raw / 4095)) * 100)));
-          console.log(`Converting analog ${raw} to percentage: ${pct}%`);
-          v = pct;
-        }
-        const digitalRaw = toNum(rec.digital);
-        console.log("Digital raw value:", digitalRaw);
-        if (v === undefined && digitalRaw !== null) {
-          // If digital 1=wet, map to 100 or 0
-          v = Number(digitalRaw) === 1 ? 100 : 0;
-          console.log(`Converting digital ${digitalRaw} to percentage: ${v}%`);
-        }
-        if (v === undefined && typeof rec.value === 'string') {
-          const n = Number(rec.value);
-          console.log("Trying to parse string value:", rec.value, "Result:", n);
-          if (!Number.isNaN(n)) v = n;
-        }
-        v = typeof v === 'number' ? v : 0;
-        if (v > 100 && v <= 1023) { // raw analog range, scale to %
-          console.log(`Scaling raw analog ${v} to percentage`);
-          v = Math.round((v / 1023) * 100);
-        }
-        if (v < 0) v = 0; if (v > 100) v = 100;
-        console.log("Final soil moisture value:", v);
-        return v;
+      function getSoilAnalogValue(rec) {
+        if (!rec || typeof rec !== 'object') return 0;
+        if (typeof rec.analog === 'number') return rec.analog;
+        if (typeof rec.analog === 'string' && rec.analog.trim() !== '' && !isNaN(Number(rec.analog))) return Number(rec.analog);
+        return 0;
       }
 
       // Process water level data
@@ -854,38 +848,21 @@
       }
 
       // Determine soil condition/category from analog or moisture percent
-      function getSoilCondition(rec, moisturePct) {
-        let category = 'Moist';
-        let level = 'Medium';
-        if (rec && typeof rec.analog === 'number') {
-          const raw = Math.max(0, Math.min(4095, rec.analog));
-          if (raw >= 3000) { category = 'Dry'; level = 'Low'; }
-          else if (raw >= 1500) { category = 'Moist'; level = 'Medium'; }
-          else { category = 'Wet'; level = 'High'; }
-          return { category, level };
-        }
-        // Fallback based on % if analog not available
-        const pct = typeof moisturePct === 'number' ? moisturePct : 0;
-        if (pct < 30) { category = 'Dry'; level = 'Low'; }
-        else if (pct < 60) { category = 'Moist'; level = 'Medium'; }
-        else { category = 'Wet'; level = 'High'; }
-        return { category, level };
+      // Soil condition now derived from digital flag only: 0 = Wet, 1 = Dry
+      function getSoilStatusFromDigital(rec) {
+        if (!rec) return { text: '--', isDry: false };
+        const d = (typeof rec.digital === 'number') ? rec.digital : Number(rec.digital);
+        if (d === 0) return { text: 'Wet', isDry: false };
+        if (d === 1) return { text: 'Dry', isDry: true };
+        return { text: '--', isDry: false };
       }
 
-      function getRainIntensity(rec) {
+      function getRainIntensity(rec) { // repurposed: returns raw analog value
         if (!rec || typeof rec !== 'object') return 0;
-        const candidates = [
-          rec.intensity,
-          rec.mm,
-          rec.rain_mm,
-          rec.value
-        ];
-        let v = candidates.find(x => typeof x === 'number');
-        if (v === undefined) {
-          if (rec.rainDetected === true || rec.isRaining === true) return 1;
-          if (rec.value === '1') return 1;
-        }
-        return typeof v === 'number' ? v : 0;
+        let analog = null;
+        if (typeof rec.analog === 'number') analog = rec.analog;
+        else if (typeof rec.analog === 'string' && rec.analog.trim() !== '' && !isNaN(Number(rec.analog))) analog = Number(rec.analog);
+        return analog !== null ? analog : 0;
       }
 
       // Try to extract a human-readable location string from a reading
@@ -1024,7 +1001,7 @@
           mpu6050Chart.update();
         }
 
-        // Update Rain chart
+        // Update Rain chart (analog values)
         if (sensorData.rain && Object.keys(sensorData.rain).length > 0) {
           const entries = Object.entries(sensorData.rain).slice(-20);
           const labels = entries.map(([_, v]) => (v.timestamp ? v.timestamp.split(' ')[1].substring(0,5) : new Date().toLocaleTimeString().substring(0,5)));
@@ -1034,7 +1011,17 @@
           rainChart.update();
         }
 
-        // Update Soil chart
+        // Update Floods Rain chart (analog values)
+        if (sensorData.floodsRain && Object.keys(sensorData.floodsRain).length > 0) {
+          const entries = Object.entries(sensorData.floodsRain).slice(-20);
+          const labels = entries.map(([_, v]) => (v.timestamp ? v.timestamp.split(' ')[1].substring(0,5) : new Date().toLocaleTimeString().substring(0,5)));
+          const data = entries.map(([_, v]) => getRainIntensity(v));
+          floodsRainChart.data.labels = labels;
+          floodsRainChart.data.datasets[0].data = data;
+          floodsRainChart.update();
+        }
+
+  // Update Soil chart (analog values)
         if (sensorData.soil && Object.keys(sensorData.soil).length > 0) {
           console.log("Soil data found:", JSON.stringify(sensorData.soil).substring(0, 200) + "...");
           
@@ -1052,8 +1039,8 @@
           
           const labels = entries.map(([_, v]) => (v.timestamp ? v.timestamp.split(' ')[1].substring(0,5) : new Date().toLocaleTimeString().substring(0,5)));
           const data = entries.map(([_, v]) => {
-            const value = getSoilMoistureValue(v);
-            console.log("Soil moisture value calculated:", value, "from entry:", JSON.stringify(v).substring(0, 100) + "...");
+            const value = getSoilAnalogValue(v);
+            console.log("Soil analog value:", value, "from entry:", JSON.stringify(v).substring(0, 100) + "...");
             return value;
           });
           
@@ -1180,14 +1167,15 @@
           }
         }
 
-        // Update Rain displays
-  if (sensorData.rain && Object.keys(sensorData.rain).length > 0) {
-      const latest = getLatestFromMap(sensorData.rain);
+        // Update Rain displays (digital: 0=Rain Detected, 1=No Rain)
+        if (sensorData.rain && Object.keys(sensorData.rain).length > 0) {
+          const latest = getLatestFromMap(sensorData.rain);
           if (latest) {
-      const intensity = getRainIntensity(latest);
-      const isRaining = latest.rainDetected === true || latest.isRaining === true || intensity > 0;
-      document.getElementById('rainIntensity').textContent = typeof intensity === 'number' && intensity.toFixed ? intensity.toFixed(2) : intensity;
-            document.getElementById('rainStatus').textContent = isRaining ? 'Raining' : 'No Rain';
+            const intensity = getRainIntensity(latest);
+            const digital = (typeof latest.digital === 'number') ? latest.digital : Number(latest.digital);
+            const isRaining = digital === 0; // 0 = rain detected
+            document.getElementById('rainIntensity').textContent = (typeof intensity === 'number' && intensity.toFixed) ? intensity.toFixed(0) : intensity;
+            document.getElementById('rainStatus').textContent = isRaining ? 'Rain Detected' : 'No Rain';
             document.getElementById('rainLastUpdated').textContent = `Last updated: ${latest.timestamp || 'Unknown'}`;
             const card = document.getElementById('rainCard');
             card.className = isRaining ? 'card warning-card' : 'card normal-card';
@@ -1197,17 +1185,35 @@
           }
         }
 
-        // Update Soil displays
-  if (sensorData.soil && Object.keys(sensorData.soil).length > 0) {
-      const latest = getLatestFromMap(sensorData.soil);
+        // Update Floods Rain displays (digital: 0=Rain Detected, 1=No Rain)
+        if (sensorData.floodsRain && Object.keys(sensorData.floodsRain).length > 0) {
+          const latest = getLatestFromMap(sensorData.floodsRain);
           if (latest) {
-  const moisture = getSoilMoistureValue(latest);
-    const cond = getSoilCondition(latest, moisture);
-      document.getElementById('soilMoisture').textContent = typeof moisture === 'number' && moisture.toFixed ? moisture.toFixed(1) : moisture;
-    document.getElementById('soilStatus').textContent = `${cond.category} (${cond.level})`;
+            const intensity = getRainIntensity(latest);
+            const digital = (typeof latest.digital === 'number') ? latest.digital : Number(latest.digital);
+            const isRaining = digital === 0; // 0 = rain detected
+            document.getElementById('floodsRainIntensity').textContent = (typeof intensity === 'number' && intensity.toFixed) ? intensity.toFixed(0) : intensity;
+            document.getElementById('floodsRainStatus').textContent = isRaining ? 'Rain Detected' : 'No Rain';
+            document.getElementById('floodsRainLastUpdated').textContent = `Last updated: ${latest.timestamp || 'Unknown'}`;
+            const card = document.getElementById('floodsRainCard');
+            card.className = isRaining ? 'card warning-card' : 'card normal-card';
+            const frLoc = getLocationString(latest) || sensorLocations.floodsRain || sensorLocations.rain;
+            const chip = document.getElementById('floodsRainLocation');
+            if (chip) chip.textContent = frLoc || 'Unknown';
+          }
+        }
+
+        // Update Soil displays (analog + digital status)
+        if (sensorData.soil && Object.keys(sensorData.soil).length > 0) {
+          const latest = getLatestFromMap(sensorData.soil);
+          if (latest) {
+            const analog = getSoilAnalogValue(latest);
+            const status = getSoilStatusFromDigital(latest);
+            document.getElementById('soilMoisture').textContent = analog;
+            document.getElementById('soilStatus').textContent = status.text;
             document.getElementById('soilLastUpdated').textContent = `Last updated: ${latest.timestamp || 'Unknown'}`;
             const card = document.getElementById('soilCard');
-    card.className = cond.category === 'Dry' ? 'card warning-card' : 'card normal-card';
+            card.className = status.isDry ? 'card warning-card' : 'card normal-card';
             const soilLoc = getLocationString(latest) || sensorLocations.soil;
             const chip = document.getElementById('soilLocation');
             if (chip) chip.textContent = soilLoc || 'Unknown';
@@ -1221,14 +1227,14 @@
           
           if (latestTilt) {
             document.getElementById('tiltValue').textContent = 
-              latestTilt.value === 1 ? 'TILTED' : 'NORMAL';
+              latestTilt.value === 0 ? 'TILTED' : 'NORMAL';
             document.getElementById('tiltReadings').textContent = totalReadings;
             document.getElementById('tiltLastUpdated').textContent = 
               `Last updated: ${latestTilt.timestamp || 'Unknown'}`;
             
             // Update card status
             const tiltCard = document.getElementById('tiltCard');
-            if (latestTilt.value === 1) {
+            if (latestTilt.value === 0) { // 0 = tilted
               tiltCard.className = 'card alert-card';
             } else {
               tiltCard.className = 'card normal-card';
@@ -1328,6 +1334,15 @@
           const intensity = latest ? (typeof latest.intensity === 'number' ? latest.intensity : (latest.value === 1 ? 1 : 0)) : 0;
           if (latest && (latest.rainDetected === true || intensity > 0)) {
             alerts.push({ type: 'info', message: 'Rain detected', time: latest.timestamp });
+          }
+        }
+
+        // Floods Rain alerts
+        if (sensorData.floodsRain && Object.keys(sensorData.floodsRain).length > 0) {
+          const latest = Object.values(sensorData.floodsRain).slice(-1)[0];
+          const intensity = latest ? (typeof latest.intensity === 'number' ? latest.intensity : (latest.value === 1 ? 1 : 0)) : 0;
+          if (latest && (latest.rainDetected === true || intensity > 0)) {
+            alerts.push({ type: 'info', message: 'Floods rain sensor: rain detected', time: latest.timestamp });
           }
         }
 
@@ -1496,7 +1511,8 @@
       // Attach click handlers to cards
       document.getElementById('bmp180Card').addEventListener('click', () => openChartModal('BMP180 Environmental Readings', bmp180Chart));
       document.getElementById('mpu6050Card').addEventListener('click', () => openChartModal('MPU6050 IMU Readings', mpu6050Chart));
-      document.getElementById('rainCard').addEventListener('click', () => openChartModal('Rainfall Sensor Readings', rainChart));
+  document.getElementById('rainCard').addEventListener('click', () => openChartModal('Rainfall Sensor Readings', rainChart));
+  document.getElementById('floodsRainCard').addEventListener('click', () => openChartModal('Floods Rain Sensor Readings', floodsRainChart));
       document.getElementById('soilCard').addEventListener('click', () => openChartModal('Soil Moisture Readings', soilChart));
       document.getElementById('tiltCard').addEventListener('click', () => openChartModal('Tilt Sensor Readings', tiltChart));
       document.getElementById('waterLevelCard').addEventListener('click', () => openChartModal('Water Level Readings', waterLevelChart));
@@ -1510,7 +1526,21 @@
   statusDiv.innerHTML = '💡 Welcome to the Disaster Management Control Center';
         
   // Auto-refresh data every 1 second (silent)
-  setInterval(() => refreshData(true), 1000);
+  // Keep existing polling as fallback (can be relaxed later)
+  setInterval(() => refreshData(true), 5000);
+  // Realtime push listener
+  if (window.electronAPI && typeof window.electronAPI.onSensorDataUpdate === 'function') {
+    window.electronAPI.onSensorDataUpdate((data) => {
+      console.log('Realtime sensor update received');
+      sensorData = data;
+      if (data && data.locations) {
+        sensorLocations = { ...sensorLocations, ...data.locations };
+      }
+      updateSensorDisplays();
+      updateCharts();
+      checkAlerts();
+    });
+  }
         
   // Initial data load (silent)
   refreshData(true);
