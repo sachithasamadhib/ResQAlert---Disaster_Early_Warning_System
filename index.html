@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Disaster Management Admin Panel</title>
+    <title>Disaster Operations Center</title>
   <script src="node_modules/chart.js/dist/chart.umd.js"></script>
     <style>
       * {
@@ -217,7 +217,15 @@
         border-radius: 10px;
         font-weight: 600;
         min-height: 20px;
+        /* Added default styling for visibility on dark gradient background */
+        background: rgba(255, 255, 255, 0.15);
+        color: #f1f5f9;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(4px);
       }
+
+      /* Override colors when specific status variants are applied */
+      .status-message.status-success, .status-message.status-error { color: inherit; }
 
       .status-success {
         background: #ecfdf5; /* lighter mint */
@@ -348,12 +356,12 @@
       <div class="header-content">
         <div class="logo">
           <span style="font-size: 2em;">🚨</span>
-          <h1>Disaster Management Control Center</h1>
+          <h1>Disaster Operations Center</h1>
         </div>
         <div class="header-actions">
           <div class="status-indicator">
             <div class="status-dot"></div>
-            <span id="connectionStatus">System Online</span>
+            <span id="connectionStatus">All Systems Online</span>
           </div>
           <button id="refreshDataBtn" class="icon-btn" title="Refresh data">🔄 Refresh</button>
           <button id="testConnectionBtn" class="icon-btn" title="Test Firebase connection">🧪 Test</button>
@@ -379,7 +387,7 @@
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌡️</span>
-            BMP180 Environmental Readings
+            Environmental Readings (BMP180)
           </div>
           <div class="sensor-location">Gampaha</div>
         </div>
@@ -408,7 +416,7 @@
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">📊</span>
-      MPU6050 IMU Readings
+            IMU Readings (MPU6050)
           </div>
           <div class="sensor-location">Rathnapura</div>
         </div>
@@ -437,7 +445,7 @@
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌧️</span>
-            Rainfall Sensor Readings
+            Rainfall Readings
           </div>
           <div class="sensor-location" id="rainLocation">Unknown</div>
         </div>
@@ -462,7 +470,7 @@
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌧️</span>
-            Floods Rain Sensor Readings
+            Rain Readings(Floods)
           </div>
           <div class="sensor-location" id="floodsRainLocation">Unknown</div>
         </div>
@@ -512,7 +520,7 @@
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">⚖️</span>
-            Tilt Sensor Readings
+            Tilt Readings
           </div>
           <div class="sensor-location">Rathnapura</div>
         </div>
@@ -573,6 +581,10 @@
 
   let alerts = [];
   let sensorLocations = { rain: '', floodsRain: '', soil: '', waterLevel: '' };
+  // Persistent dismissal tracking for notifications
+  const dismissedAlertKeys = new Set();
+  let currentRawAlerts = [];
+  const alertKey = (a) => `${a.type}|${a.message}|${a.time || ''}`;
 
       // DOM elements
   const testBtn = document.getElementById('testConnectionBtn');
@@ -1276,90 +1288,93 @@
 
       // Check for alerts
       function checkAlerts() {
-        alerts = [];
-        
-        // Check BMP180 alerts
-        if (sensorData.bmp180 && Object.keys(sensorData.bmp180).length > 0) {
-          const latestBmp = Object.values(sensorData.bmp180).slice(-1)[0];
-          if (latestBmp && latestBmp.temperature_C > 35) {
-            alerts.push({
-              type: 'warning',
-              message: `High temperature detected in Gampaha: ${latestBmp.temperature_C.toFixed(1)}°C`,
-              time: latestBmp.timestamp
-            });
-          }
-          if (latestBmp && latestBmp.pressure_hPa < 1000) {
-            alerts.push({
-              type: 'warning',
-              message: `Low pressure detected in Gampaha: ${latestBmp.pressure_hPa.toFixed(1)} hPa`,
-              time: latestBmp.timestamp
-            });
-          }
-        }
+  alerts = [];
+  currentRawAlerts = [];
 
-        // Check MPU6050 alerts
-        if (sensorData.mpu6050 && Object.keys(sensorData.mpu6050).length > 0) {
-          const latestMpu = Object.values(sensorData.mpu6050).slice(-1)[0];
-          if (latestMpu) {
-            const totalAccel = Math.sqrt(
-              (latestMpu.accelX || 0) ** 2 + 
-              (latestMpu.accelY || 0) ** 2 + 
-              (latestMpu.accelZ || 0) ** 2
-            );
-            if (totalAccel > 1.5) {
-              alerts.push({
-                type: 'alert',
-                message: `HIGH SEISMIC ACTIVITY in Rathnapura: ${totalAccel.toFixed(3)}g`,
-                time: latestMpu.timestamp
-              });
-            }
-          }
-        }
+        // --- Per-sensor evaluators (7 sensors) ---
+        const evalBmp180 = () => {
+          if (!sensorData.bmp180 || Object.keys(sensorData.bmp180).length === 0) return;
+          const latest = Object.values(sensorData.bmp180).slice(-1)[0];
+            if (!latest) return;
+            if (latest.temperature_C > 35) alerts.push({ type: 'warning', message: `High temperature (Gampaha) ${latest.temperature_C.toFixed(1)}°C`, time: latest.timestamp });
+            if (latest.temperature_C < 18) alerts.push({ type: 'info', message: `Low temperature (Gampaha) ${latest.temperature_C.toFixed(1)}°C`, time: latest.timestamp });
+            if (latest.pressure_hPa < 1000) alerts.push({ type: 'warning', message: `Low pressure (Gampaha) ${latest.pressure_hPa.toFixed(1)} hPa`, time: latest.timestamp });
+            if (latest.pressure_hPa < 990) alerts.push({ type: 'alert', message: `Severe low pressure (Gampaha) ${latest.pressure_hPa.toFixed(1)} hPa`, time: latest.timestamp });
+        };
 
-        // Check Tilt alerts
-        if (sensorData.tilt && Object.keys(sensorData.tilt).length > 0) {
-          const latestTilt = Object.values(sensorData.tilt).slice(-1)[0];
-          if (latestTilt && latestTilt.value === 1) {
-            alerts.push({
-              type: 'alert',
-              message: 'LANDSLIDE ALERT: Tilt sensor activated in Rathnapura',
-              time: latestTilt.timestamp
-            });
-          }
-        }
+        const evalMpu6050 = () => {
+          if (!sensorData.mpu6050 || Object.keys(sensorData.mpu6050).length === 0) return;
+          const latest = Object.values(sensorData.mpu6050).slice(-1)[0];
+          if (!latest) return;
+          const total = Math.sqrt((latest.accelX||0)**2 + (latest.accelY||0)**2 + (latest.accelZ||0)**2);
+          if (total > 1.5) alerts.push({ type: 'alert', message: `High seismic activity (Rathnapura) ${total.toFixed(3)}g`, time: latest.timestamp });
+          else if (total > 1.2) alerts.push({ type: 'warning', message: `Elevated vibration (Rathnapura) ${total.toFixed(3)}g`, time: latest.timestamp });
+        };
 
-        // Rain alerts
-        if (sensorData.rain && Object.keys(sensorData.rain).length > 0) {
+        const evalRain = () => {
+          if (!sensorData.rain || Object.keys(sensorData.rain).length === 0) return;
           const latest = Object.values(sensorData.rain).slice(-1)[0];
-          const intensity = latest ? (typeof latest.intensity === 'number' ? latest.intensity : (latest.value === 1 ? 1 : 0)) : 0;
-          if (latest && (latest.rainDetected === true || intensity > 0)) {
-            alerts.push({ type: 'info', message: 'Rain detected', time: latest.timestamp });
-          }
-        }
+          if (!latest) return;
+          const analog = getRainIntensity(latest);
+          const digital = (typeof latest.digital === 'number') ? latest.digital : Number(latest.digital);
+          const raining = digital === 0; // 0 = rain detected
+          if (raining) alerts.push({ type: 'info', message: `Rain detected${analog?` (Analog ${analog})`:''}`, time: latest.timestamp });
+          if (analog > 3000) alerts.push({ type: 'warning', message: `Heavy rain analog=${analog}`, time: latest.timestamp });
+        };
 
-        // Floods Rain alerts
-        if (sensorData.floodsRain && Object.keys(sensorData.floodsRain).length > 0) {
+        const evalFloodsRain = () => {
+          if (!sensorData.floodsRain || Object.keys(sensorData.floodsRain).length === 0) return;
           const latest = Object.values(sensorData.floodsRain).slice(-1)[0];
-          const intensity = latest ? (typeof latest.intensity === 'number' ? latest.intensity : (latest.value === 1 ? 1 : 0)) : 0;
-          if (latest && (latest.rainDetected === true || intensity > 0)) {
-            alerts.push({ type: 'info', message: 'Floods rain sensor: rain detected', time: latest.timestamp });
-          }
-        }
+          if (!latest) return;
+          const analog = getRainIntensity(latest);
+          const digital = (typeof latest.digital === 'number') ? latest.digital : Number(latest.digital);
+          const raining = digital === 0;
+          if (raining) alerts.push({ type: 'info', message: `Floods sensor rain detected${analog?` (Analog ${analog})`:''}`, time: latest.timestamp });
+          if (analog > 3000) alerts.push({ type: 'warning', message: `Heavy rain (floods sensor) analog=${analog}`, time: latest.timestamp });
+        };
 
-        // Soil alerts
-        if (sensorData.soil && Object.keys(sensorData.soil).length > 0) {
+        const evalSoil = () => {
+          if (!sensorData.soil || Object.keys(sensorData.soil).length === 0) return;
           const latest = Object.values(sensorData.soil).slice(-1)[0];
-          const moisture = latest ? (typeof latest.moisture === 'number' ? latest.moisture : (typeof latest.value === 'number' ? latest.value : 0)) : 0;
-          if (latest && moisture < 30) {
-            alerts.push({ type: 'warning', message: `Low soil moisture: ${moisture}%`, time: latest.timestamp });
-          }
-        }
+          if (!latest) return;
+          const analog = getSoilAnalogValue(latest);
+          const digitalStatus = getSoilStatusFromDigital(latest); // digital 1 => Dry
+          if (digitalStatus.isDry) alerts.push({ type: 'warning', message: `Soil dry (analog ${analog})`, time: latest.timestamp });
+          if (analog < 800) alerts.push({ type: 'info', message: `Soil very wet (analog ${analog})`, time: latest.timestamp });
+        };
 
-        // Update notification UI
-        const sig = alerts.map(a => `${a.type}|${a.message}|${a.time || ''}`).join('||');
-        lastAlertSignature = sig;
+        const evalTilt = () => {
+          if (!sensorData.tilt || Object.keys(sensorData.tilt).length === 0) return;
+          const latest = Object.values(sensorData.tilt).slice(-1)[0];
+          if (!latest) return;
+          if (latest.value === 0) alerts.push({ type: 'alert', message: 'Tilt sensor triggered (possible landslide)', time: latest.timestamp });
+        };
 
-        if (alerts.length > 0 && sig !== clearedAlertSignature) {
+        const evalWaterLevel = () => {
+          if (!sensorData.waterLevel || Object.keys(sensorData.waterLevel).length === 0) return;
+          const latest = getLatestFromMap(sensorData.waterLevel);
+          if (!latest) return;
+          const val = getWaterLevelValue(latest);
+          if (val >= 90) alerts.push({ type: 'alert', message: `Critical water level ${val.toFixed(1)}%`, time: latest.timestamp || latest.time });
+          else if (val >= 80) alerts.push({ type: 'warning', message: `High water level ${val.toFixed(1)}%`, time: latest.timestamp || latest.time });
+          else if (val <= 10) alerts.push({ type: 'info', message: `Low water level ${val.toFixed(1)}%`, time: latest.timestamp || latest.time });
+        };
+
+        // Execute evaluators
+        evalBmp180();
+        evalMpu6050();
+        evalRain();
+        evalFloodsRain();
+        evalSoil();
+        evalTilt();
+        evalWaterLevel();
+
+        // Preserve raw alerts for potential dismissal
+        currentRawAlerts = [...alerts];
+        // Filter out any previously dismissed alerts
+        alerts = alerts.filter(a => !dismissedAlertKeys.has(alertKey(a)));
+
+        if (alerts.length > 0) {
           notifBadge.style.display = 'flex';
           notifBadge.textContent = alerts.length;
           notifList.innerHTML = alerts.map(a => `
@@ -1464,10 +1479,9 @@
           notifPanel.style.display = 'none';
         }
       });
-      let lastAlertSignature = '';
-      let clearedAlertSignature = '';
       clearAlertsBtn.addEventListener('click', () => {
-        clearedAlertSignature = lastAlertSignature;
+        // Add all currently generated alerts (raw) to dismissed set so they won't reappear
+        currentRawAlerts.forEach(a => dismissedAlertKeys.add(alertKey(a)));
         notifBadge.style.display = 'none';
         notifList.innerHTML = '<div style="padding:14px; color:#64748b;">No notifications</div>';
         notifPanel.style.display = 'none';
