@@ -44,6 +44,7 @@ const firebaseConfig = {
 
 let firebaseApp = null
 let database = null
+let firestore = null // Firestore instance for persistent notifications
 
 // Configuration constants from environment variables
 const CONFIG = {
@@ -67,9 +68,11 @@ async function initializeFirebase() {
   try {
     const firebase = await import("firebase/app")
     const firebaseDatabase = await import("firebase/database")
+  const firebaseFirestore = await import("firebase/firestore")
 
     firebaseApp = firebase.initializeApp(firebaseConfig)
     database = firebaseDatabase.getDatabase(firebaseApp)
+  firestore = firebaseFirestore.getFirestore(firebaseApp)
 
     return true
   } catch (error) {
@@ -632,6 +635,83 @@ ipcMain.handle("fetch-latest-sensor-data", async () => {
 
 ipcMain.handle("fetch-all-sensor-data", async () => {
   return await fetchAllSensorData()
+})
+
+// IPC: fetch existing notifications (latest 100)
+ipcMain.handle("get-notifications", async () => {
+  try {
+    if (!firestore) {
+      const ok = await initializeFirebase()
+      if (!ok) return { success: false, message: "Firebase init failed" }
+    }
+  const { collection, getDocs, limit, query } = await import("firebase/firestore")
+  const colRef = collection(firestore, "notifications")
+  // No ordering since only permitted fields are stored
+  const q = query(colRef, limit(100))
+  const snap = await getDocs(q)
+    const items = []
+    snap.forEach((d) => items.push({ id: d.id, ...d.data() }))
+    return { success: true, data: items }
+  } catch (err) {
+    return { success: false, message: err.message }
+  }
+})
+
+// IPC: save an array of new notifications
+ipcMain.handle("save-notifications", async (_event, notifications) => {
+  try {
+    if (!Array.isArray(notifications) || notifications.length === 0) {
+      return { success: true, saved: 0 }
+    }
+    if (!firestore) {
+      const ok = await initializeFirebase()
+      if (!ok) return { success: false, message: "Firebase init failed" }
+    }
+    const { collection, addDoc, serverTimestamp } = await import("firebase/firestore")
+    const colRef = collection(firestore, "notifications")
+    let saved = 0
+    for (const n of notifications) {
+      // Basic validation & normalization
+      const now = new Date()
+      await addDoc(colRef, {
+        isRead: false,
+        message: n.message || "",
+        time: n.time || now.toLocaleString("en-GB", { hour12: false }),
+        type: n.type === "landslide" || n.type === "flood" ? n.type : "info",
+        userID: "u6vBGxJXJIkFg0a2SKg7",
+      })
+      saved++
+    }
+    return { success: true, saved }
+  } catch (err) {
+    console.error("Failed to save notifications:", err)
+    return { success: false, message: err.message }
+  }
+})
+
+// IPC: mark notifications as read
+ipcMain.handle("mark-notifications-read", async (_event, ids) => {
+  try {
+    if (!Array.isArray(ids) || ids.length === 0) return { success: true, updated: 0 }
+    if (!firestore) {
+      const ok = await initializeFirebase()
+      if (!ok) return { success: false, message: "Firebase init failed" }
+    }
+    const { doc, updateDoc } = await import("firebase/firestore")
+    let updated = 0
+    for (const id of ids) {
+      try {
+        const ref = doc(firestore, "notifications", id)
+        await updateDoc(ref, { isRead: true })
+        updated++
+      } catch (e) {
+        console.warn("Could not mark notification read", id, e.message)
+      }
+    }
+    return { success: true, updated }
+  } catch (err) {
+    return { success: false, message: err.message }
+  }
 })
 
 // IPC handlers for user management

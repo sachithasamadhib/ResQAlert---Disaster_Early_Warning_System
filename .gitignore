@@ -50,3 +50,9 @@ logs/
 # Optional (if using GitHub Codespace/WSL)
 # ----------------------------------------
 *.code-workspace
+
+# ----------------------------------------
+# Arduino secrets
+# ----------------------------------------
+Arduino code/**/secrets.h
+secrets.h

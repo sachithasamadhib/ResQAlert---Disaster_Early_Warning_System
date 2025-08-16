@@ -19,4 +19,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("sensor-data-update")
     ipcRenderer.on("sensor-data-update", (_event, data) => callback(data))
   },
+  // Notification APIs
+  getNotifications: () => ipcRenderer.invoke("get-notifications"),
+  saveNotifications: (notifications) => ipcRenderer.invoke("save-notifications", notifications),
+  markNotificationsRead: (ids) => ipcRenderer.invoke("mark-notifications-read", ids),
 })
