@@ -585,6 +585,44 @@
   const dismissedAlertKeys = new Set();
   let currentRawAlerts = [];
   const alertKey = (a) => `${a.type}|${a.message}|${a.time || ''}`;
+  // Store notifications loaded from Firestore (historical)
+  let storedNotifications = [];
+  let lastPersistedKeys = new Set();
+  // Persistent in-session history of all risk notifications (landslide/flood)
+  const riskHistory = []; // {type,message,time,firstSeen:Date.now()}
+  const riskKey = (a) => `${a.type}|${a.message}|${a.time}`;
+  // Risk evaluation thresholds (tunable)
+  const RISK_THRESHOLDS = {
+    bmp: { lowPressure: 995, highTemp: 34 },
+    rain: { heavy: 1500 }, // hillside rainfall intensity for landslide risk
+    floodsRain: { heavy: 1400 }, // flood zone rainfall intensity
+    waterLevel: { high: 80, critical: 95 },
+  };
+  // Throttle map to avoid duplicate alerts spam (per key)
+  const alertLastSent = {}; // key -> timestamp ms
+  const ALERT_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+
+  function renderNotificationHistory() {
+    // Exclude dismissed
+    const visible = riskHistory.filter(a => !dismissedAlertKeys.has(riskKey(a)));
+    if (visible.length === 0) {
+      notifBadge.style.display = 'none';
+      notifList.innerHTML = '<div style="padding:14px; color:#64748b;">No notifications</div>';
+      return;
+    }
+    notifBadge.style.display = 'flex';
+    notifBadge.textContent = visible.length;
+    // Show newest first
+    const ordered = [...visible].sort((a,b)=>b.firstSeen - a.firstSeen).slice(0,100);
+    notifList.innerHTML = ordered.map(a => `
+      <div class="notif-item">
+        <div class="notif-type" style="background:${a.type === 'landslide' ? '#f59e0b' : '#0ea5e9'}"></div>
+        <div>
+          <div style="font-weight:600; color:#0f172a;">${a.message}</div>
+          <div class="notif-time">${a.time || 'Unknown time'}</div>
+        </div>
+      </div>`).join('');
+  }
 
       // DOM elements
   const testBtn = document.getElementById('testConnectionBtn');
@@ -1292,14 +1330,28 @@
   currentRawAlerts = [];
 
         // --- Per-sensor evaluators (7 sensors) ---
+        // Helper to add risk alert with cooldown
+        const addRisk = (type, message, baseTime, keyExtra='') => {
+          const key = `${type}|${message}|${keyExtra}`;
+          const now = Date.now();
+          const last = alertLastSent[key] || 0;
+          if (now - last < ALERT_COOLDOWN_MS) return; // skip duplicate within cooldown
+          alertLastSent[key] = now;
+          alerts.push({ type, message, time: baseTime });
+        };
+
         const evalBmp180 = () => {
           if (!sensorData.bmp180 || Object.keys(sensorData.bmp180).length === 0) return;
           const latest = Object.values(sensorData.bmp180).slice(-1)[0];
-            if (!latest) return;
-            if (latest.temperature_C > 35) alerts.push({ type: 'warning', message: `High temperature (Gampaha) ${latest.temperature_C.toFixed(1)}°C`, time: latest.timestamp });
-            if (latest.temperature_C < 18) alerts.push({ type: 'info', message: `Low temperature (Gampaha) ${latest.temperature_C.toFixed(1)}°C`, time: latest.timestamp });
-            if (latest.pressure_hPa < 1000) alerts.push({ type: 'warning', message: `Low pressure (Gampaha) ${latest.pressure_hPa.toFixed(1)} hPa`, time: latest.timestamp });
-            if (latest.pressure_hPa < 990) alerts.push({ type: 'alert', message: `Severe low pressure (Gampaha) ${latest.pressure_hPa.toFixed(1)} hPa`, time: latest.timestamp });
+          if (!latest) return;
+          const t = latest.temperature_C;
+          const p = latest.pressure_hPa;
+          if (p !== undefined && p <= RISK_THRESHOLDS.bmp.lowPressure) {
+            addRisk('flood', `Low atmospheric pressure ${p.toFixed(1)} hPa (possible heavy rain system)`, latest.timestamp, 'pressure');
+          }
+          if (t !== undefined && t >= RISK_THRESHOLDS.bmp.highTemp && p <= RISK_THRESHOLDS.bmp.lowPressure) {
+            addRisk('flood', `Warm & low-pressure air mass (T=${t.toFixed(1)}°C, P=${p.toFixed(1)} hPa)`, latest.timestamp, 'tempPressureCombo');
+          }
         };
 
         const evalMpu6050 = () => {
@@ -1307,8 +1359,8 @@
           const latest = Object.values(sensorData.mpu6050).slice(-1)[0];
           if (!latest) return;
           const total = Math.sqrt((latest.accelX||0)**2 + (latest.accelY||0)**2 + (latest.accelZ||0)**2);
-          if (total > 1.5) alerts.push({ type: 'alert', message: `High seismic activity (Rathnapura) ${total.toFixed(3)}g`, time: latest.timestamp });
-          else if (total > 1.2) alerts.push({ type: 'warning', message: `Elevated vibration (Rathnapura) ${total.toFixed(3)}g`, time: latest.timestamp });
+          if (total > 1.5) alerts.push({ type: 'landslide', message: `High ground vibration detected (${total.toFixed(3)}g)`, time: latest.timestamp });
+          else if (total > 1.2) alerts.push({ type: 'landslide', message: `Elevated ground vibration (${total.toFixed(3)}g)`, time: latest.timestamp });
         };
 
         const evalRain = () => {
@@ -1318,8 +1370,9 @@
           const analog = getRainIntensity(latest);
           const digital = (typeof latest.digital === 'number') ? latest.digital : Number(latest.digital);
           const raining = digital === 0; // 0 = rain detected
-          if (raining) alerts.push({ type: 'info', message: `Rain detected${analog?` (Analog ${analog})`:''}`, time: latest.timestamp });
-          if (analog > 3000) alerts.push({ type: 'warning', message: `Heavy rain analog=${analog}`, time: latest.timestamp });
+          if (raining && analog >= RISK_THRESHOLDS.rain.heavy) {
+            addRisk('landslide', `Sustained heavy rainfall (${analog}) - slope saturation risk`, latest.timestamp, 'rain');
+          }
         };
 
         const evalFloodsRain = () => {
@@ -1329,8 +1382,9 @@
           const analog = getRainIntensity(latest);
           const digital = (typeof latest.digital === 'number') ? latest.digital : Number(latest.digital);
           const raining = digital === 0;
-          if (raining) alerts.push({ type: 'info', message: `Floods sensor rain detected${analog?` (Analog ${analog})`:''}`, time: latest.timestamp });
-          if (analog > 3000) alerts.push({ type: 'warning', message: `Heavy rain (floods sensor) analog=${analog}`, time: latest.timestamp });
+          if (raining && analog >= RISK_THRESHOLDS.floodsRain.heavy) {
+            addRisk('flood', `Heavy rainfall in flood zone (${analog})`, latest.timestamp, 'floodsRain');
+          }
         };
 
         const evalSoil = () => {
@@ -1339,15 +1393,15 @@
           if (!latest) return;
           const analog = getSoilAnalogValue(latest);
           const digitalStatus = getSoilStatusFromDigital(latest); // digital 1 => Dry
-          if (digitalStatus.isDry) alerts.push({ type: 'warning', message: `Soil dry (analog ${analog})`, time: latest.timestamp });
-          if (analog < 800) alerts.push({ type: 'info', message: `Soil very wet (analog ${analog})`, time: latest.timestamp });
+          if (digitalStatus.isDry && analog > 2500) addRisk('landslide', `Soil dryness detected (analog ${analog})`, latest.timestamp, 'soilDry');
+          if (analog < 800) addRisk('landslide', `Soil saturation detected (analog ${analog})`, latest.timestamp, 'soilWet');
         };
 
         const evalTilt = () => {
           if (!sensorData.tilt || Object.keys(sensorData.tilt).length === 0) return;
           const latest = Object.values(sensorData.tilt).slice(-1)[0];
           if (!latest) return;
-          if (latest.value === 0) alerts.push({ type: 'alert', message: 'Tilt sensor triggered (possible landslide)', time: latest.timestamp });
+          if (latest.value === 0) addRisk('landslide', 'Slope tilt detected (possible movement)', latest.timestamp, 'tilt');
         };
 
         const evalWaterLevel = () => {
@@ -1355,9 +1409,8 @@
           const latest = getLatestFromMap(sensorData.waterLevel);
           if (!latest) return;
           const val = getWaterLevelValue(latest);
-          if (val >= 90) alerts.push({ type: 'alert', message: `Critical water level ${val.toFixed(1)}%`, time: latest.timestamp || latest.time });
-          else if (val >= 80) alerts.push({ type: 'warning', message: `High water level ${val.toFixed(1)}%`, time: latest.timestamp || latest.time });
-          else if (val <= 10) alerts.push({ type: 'info', message: `Low water level ${val.toFixed(1)}%`, time: latest.timestamp || latest.time });
+          if (val >= RISK_THRESHOLDS.waterLevel.critical) addRisk('flood', `Critical water level ${val.toFixed(1)}%`, latest.timestamp || latest.time, 'waterCritical');
+          else if (val >= RISK_THRESHOLDS.waterLevel.high) addRisk('flood', `High water level ${val.toFixed(1)}%`, latest.timestamp || latest.time, 'waterHigh');
         };
 
         // Execute evaluators
@@ -1375,20 +1428,53 @@
         alerts = alerts.filter(a => !dismissedAlertKeys.has(alertKey(a)));
 
         if (alerts.length > 0) {
-          notifBadge.style.display = 'flex';
-          notifBadge.textContent = alerts.length;
-          notifList.innerHTML = alerts.map(a => `
-            <div class="notif-item">
-              <div class="notif-type" style="background:${a.type === 'alert' ? '#ef4444' : a.type === 'warning' ? '#f59e0b' : '#3b82f6'}"></div>
-              <div>
-                <div style="font-weight:600; color:#0f172a;">${a.message}</div>
-                <div class="notif-time">${a.time || 'Unknown time'}</div>
-              </div>
-            </div>
-          `).join('');
+          // Persist any NEW alerts to Firestore (avoid duplicates by key)
+          // Only persist landslide / flood alerts (risk events)
+          const riskAlerts = alerts.filter(a => a.type === 'landslide' || a.type === 'flood');
+          const newToPersist = riskAlerts.filter(a => {
+            const k = alertKey(a);
+            return !lastPersistedKeys.has(k);
+          }).map(a => ({ ...a, key: alertKey(a), timeISO: new Date().toISOString() }));
+          if (newToPersist.length > 0 && window.electronAPI && window.electronAPI.saveNotifications) {
+            window.electronAPI.saveNotifications(newToPersist).then(res => {
+              if (res && res.success) {
+                newToPersist.forEach(n => lastPersistedKeys.add(n.key));
+              }
+            }).catch(()=>{});
+          }
+          // Merge into history (dedupe by type+message+time)
+          for (const a of riskAlerts) {
+            const k = riskKey(a);
+            if (!riskHistory.find(r => riskKey(r) === k)) {
+              riskHistory.push({ ...a, firstSeen: Date.now() });
+            }
+          }
+          renderNotificationHistory();
         } else {
-          notifBadge.style.display = 'none';
-          notifList.innerHTML = '<div style="padding:14px; color:#64748b;">No notifications</div>';
+          // No new alerts; still render existing history
+          renderNotificationHistory();
+        }
+      }
+
+      // Load existing notifications from Firestore on startup
+      async function loadStoredNotifications() {
+        if (!window.electronAPI || !window.electronAPI.getNotifications) return;
+        try {
+          const res = await window.electronAPI.getNotifications();
+          if (res.success) {
+            storedNotifications = res.data || [];
+            // Seed lastPersistedKeys so we don't duplicate existing ones
+            storedNotifications.forEach(n => {
+              const k = riskKey(n);
+              lastPersistedKeys.add(`${n.type}|${n.message}|${n.time}`);
+              if (!riskHistory.find(r => riskKey(r) === k)) {
+                riskHistory.push({ type: n.type, message: n.message, time: n.time, firstSeen: Date.now() });
+              }
+            });
+            renderNotificationHistory();
+          }
+        } catch (e) {
+          console.warn('Failed to load stored notifications', e.message);
         }
       }
 
@@ -1481,9 +1567,9 @@
       });
       clearAlertsBtn.addEventListener('click', () => {
         // Add all currently generated alerts (raw) to dismissed set so they won't reappear
-        currentRawAlerts.forEach(a => dismissedAlertKeys.add(alertKey(a)));
-        notifBadge.style.display = 'none';
-        notifList.innerHTML = '<div style="padding:14px; color:#64748b;">No notifications</div>';
+  // Dismiss all existing history
+  riskHistory.forEach(a => dismissedAlertKeys.add(riskKey(a)));
+  renderNotificationHistory();
         notifPanel.style.display = 'none';
       });
 
@@ -1558,6 +1644,7 @@
         
   // Initial data load (silent)
   refreshData(true);
+  loadStoredNotifications();
       });
     </script>
   </body>
