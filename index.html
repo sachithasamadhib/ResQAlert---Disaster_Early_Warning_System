@@ -35,17 +35,22 @@
         justify-content: space-between;
         align-items: center;
       }
+  .location-filter-wrapper { display:flex; align-items:center; gap:6px; background:#ffffff; border:2px solid #e2e8f0; padding:6px 12px; border-radius:10px; }
+  .location-filter-wrapper label { font-size:13px; font-weight:600; color:#334155; }
+  #locationFilter { border: none; background: transparent; font-size:14px; font-weight:600; color:#1e3c72; outline:none; cursor:pointer; }
+  #locationFilter option { font-weight:500; }
 
       .logo {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 10px;  
       }
 
       .logo h1 {
         color: #1e3c72;
         font-size: 1.8em;
         font-weight: 600;
+        margin-left: -50px;  
       }
 
   .status-indicator {
@@ -355,10 +360,31 @@
     <header class="header">
       <div class="header-content">
         <div class="logo">
-          <span style="font-size: 2em;">🚨</span>
-          <h1>Disaster Operations Center</h1>
+          <h1>🚨Disaster Operations Center</h1>
         </div>
         <div class="header-actions">
+          <div class="location-filter-wrapper" title="Filter sensors by location">
+            <label for="locationFilter">Location:</label>
+            <select id="locationFilter">
+              <option value="All">All</option>
+              <option value="Gampaha">Gampaha</option>
+              <option value="Rathnapura">Rathnapura</option>
+            </select>
+          </div>
+          <div class="location-filter-wrapper" title="Generate analytical PDF report">
+            <label for="reportTypeSelect">Report:</label>
+            <select id="reportTypeSelect">
+              <option value="combined">Flood & Landslide</option>
+              <option value="flood">Flood Only</option>
+              <option value="landslide">Landslide Only</option>
+            </select>
+            <select id="reportRangeSelect" title="Time Range">
+              <option value="6h">Last 6h</option>
+              <option value="24h" selected>Last 24h</option>
+              <option value="7d">Last 7d</option>
+            </select>
+            <button id="generateReportBtn" class="icon-btn" style="padding:6px 14px;">Export</button>
+          </div>
           <div class="status-indicator">
             <div class="status-dot"></div>
             <span id="connectionStatus">All Systems Online</span>
@@ -383,7 +409,7 @@
       <div id="statusMessage" class="status-message" style="grid-column: 1 / -1;"></div>
 
       <!-- BMP180 Environmental Sensor -->
-      <div class="card normal-card" id="bmp180Card">
+  <div class="card normal-card" id="bmp180Card" data-location="Gampaha">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌡️</span>
@@ -412,7 +438,7 @@
       </div>
 
       <!-- MPU6050 Seismic Sensor -->
-      <div class="card normal-card" id="mpu6050Card">
+  <div class="card normal-card" id="mpu6050Card" data-location="Rathnapura">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">📊</span>
@@ -441,7 +467,7 @@
       </div>
 
   <!-- Rain Sensor -->
-      <div class="card normal-card" id="rainCard">
+  <div class="card normal-card" id="rainCard" data-location="Rathnapura">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌧️</span>
@@ -466,7 +492,7 @@
       </div>
 
       <!-- Floods Rain Sensor (additional rainfall source) -->
-      <div class="card normal-card" id="floodsRainCard">
+  <div class="card normal-card" id="floodsRainCard" data-location="Gampaha">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌧️</span>
@@ -491,7 +517,7 @@
       </div>
 
       <!-- Soil Moisture Sensor -->
-      <div class="card normal-card" id="soilCard">
+  <div class="card normal-card" id="soilCard" data-location="Rathnapura">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">🌱</span>
@@ -516,7 +542,7 @@
       </div>
 
       <!-- Tilt Sensor -->
-      <div class="card normal-card" id="tiltCard">
+  <div class="card normal-card" id="tiltCard" data-location="Rathnapura">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">⚖️</span>
@@ -541,7 +567,7 @@
       </div>
 
       <!-- Water Level Sensor -->
-      <div class="card normal-card" id="waterLevelCard">
+  <div class="card normal-card" id="waterLevelCard" data-location="Gampaha">
         <div class="card-header">
           <div class="card-title">
             <span class="card-icon">💧</span>
@@ -629,11 +655,15 @@
   const refreshBtn = document.getElementById('refreshDataBtn');
       const statusDiv = document.getElementById('statusMessage');
       const connectionStatus = document.getElementById('connectionStatus');
+  const locationFilter = document.getElementById('locationFilter');
   const notifBtn = document.getElementById('notifButton');
   const notifBadge = document.getElementById('notifBadge');
   const notifPanel = document.getElementById('notifPanel');
   const notifList = document.getElementById('notifList');
   const clearAlertsBtn = document.getElementById('clearAlertsBtn');
+  const generateReportBtn = document.getElementById('generateReportBtn');
+  const reportTypeSelect = document.getElementById('reportTypeSelect');
+  const reportRangeSelect = document.getElementById('reportRangeSelect');
 
       // Initialize charts
   function initializeCharts() {
@@ -1557,6 +1587,46 @@
       // Event listeners
       testBtn.addEventListener('click', testConnection);
   refreshBtn.addEventListener('click', () => refreshData(false));
+      // Location filter logic
+      function applyLocationFilter() {
+        const selected = locationFilter.value;
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+          const loc = card.getAttribute('data-location');
+          if (!loc) return; // skip non-sensor cards if any in future
+          if (selected === 'All' || loc === selected) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      }
+      locationFilter.addEventListener('change', applyLocationFilter);
+      generateReportBtn.addEventListener('click', async () => {
+        if (!window.electronAPI || !window.electronAPI.generateReport) {
+          alert('Report generation not available in this build');
+          return;
+        }
+        generateReportBtn.disabled = true;
+        const original = generateReportBtn.textContent;
+        generateReportBtn.textContent = 'Generating...';
+        try {
+          const res = await window.electronAPI.generateReport({ reportType: reportTypeSelect.value, timeRange: reportRangeSelect.value });
+          if (res.success) {
+            statusDiv.className = 'status-message status-success';
+            statusDiv.textContent = '✅ Report saved: ' + res.path;
+          } else {
+            statusDiv.className = 'status-message status-error';
+            statusDiv.textContent = '❌ Report failed: ' + res.message;
+          }
+        } catch (e) {
+          statusDiv.className = 'status-message status-error';
+          statusDiv.textContent = '❌ Report error: ' + e.message;
+        } finally {
+          generateReportBtn.disabled = false;
+          generateReportBtn.textContent = original;
+        }
+      });
       notifBtn.addEventListener('click', () => {
         notifPanel.style.display = notifPanel.style.display === 'block' ? 'none' : 'block';
       });
@@ -1645,6 +1715,7 @@
   // Initial data load (silent)
   refreshData(true);
   loadStoredNotifications();
+  applyLocationFilter();
       });
     </script>
   </body>

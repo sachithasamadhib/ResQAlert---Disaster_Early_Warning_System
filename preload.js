@@ -23,4 +23,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getNotifications: () => ipcRenderer.invoke("get-notifications"),
   saveNotifications: (notifications) => ipcRenderer.invoke("save-notifications", notifications),
   markNotificationsRead: (ids) => ipcRenderer.invoke("mark-notifications-read", ids),
+  generateReport: (opts) => ipcRenderer.invoke('generate-report', opts),
 })

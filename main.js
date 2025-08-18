@@ -1,4 +1,6 @@
 const { app, BrowserWindow, ipcMain, Menu } = require("electron")
+const { dialog } = require("electron")
+const fs = require("fs")
 
 // Load environment variables
 require("dotenv").config()
@@ -750,6 +752,172 @@ function createWindow() {
   // Start realtime listener for water level (and potentially others later)
   startRealtimeWaterLevelListener(win)
 }
+
+// Utility: parse timestamp-like value to Date (fallback now)
+function parseTimestamp(ts) {
+  if (!ts) return null
+  if (ts instanceof Date) return ts
+  const d = new Date(ts)
+  if (!isNaN(d.getTime())) return d
+  return null
+}
+
+// Prepare data subset based on time range (ms cutoff)
+function filterByTimeRange(mapObj, cutoff) {
+  if (!cutoff || !mapObj || typeof mapObj !== 'object') return mapObj || {}
+  const result = {}
+  for (const [k, v] of Object.entries(mapObj)) {
+    const d = parseTimestamp(v && (v.timestamp || v.time))
+    if (!d || d.getTime() >= cutoff) result[k] = v
+  }
+  return result
+}
+
+// Summaries for sensor categories relevant to floods / landslides
+function summarizeData(data, reportType) {
+  const now = Date.now()
+  const sections = []
+  // Helper building blocks
+  const buildTable = (rows) => {
+    if (!rows || rows.length === 0) return '<p style="color:#64748b;font-style:italic;">No data</p>'
+    const headers = Object.keys(rows[0])
+    return `<table class="data-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${headers.map(h=>`<td>${r[h] ?? ''}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+  }
+
+  // Flood-focused sensors: rain (floodsRain), waterLevel, bmp180 (pressure), floodsRain
+  if (reportType !== 'landslide') {
+    // Water Level summary
+    const wlValues = Object.values(data.waterLevel || {})
+    const wlNums = wlValues.map(v=> {
+      const candidates = [v.WaterLevelPercentage, v.waterLevelPercentage, v.waterLevel, v.value]
+      const num = candidates.find(x=> typeof x === 'number')
+      return typeof num === 'number'? num : null
+    }).filter(n=> n!==null)
+    const wlAvg = wlNums.length? (wlNums.reduce((a,b)=>a+b,0)/wlNums.length).toFixed(1) : '--'
+    const wlMax = wlNums.length? Math.max(...wlNums).toFixed(1) : '--'
+    const wlLatest = wlNums.length? wlNums[wlNums.length-1].toFixed(1) : '--'
+    sections.push(`<h2>Flood Risk Overview</h2>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-label">Avg Water Level %</div><div class="kpi-value">${wlAvg}</div></div>
+        <div class="kpi"><div class="kpi-label">Max Water Level %</div><div class="kpi-value">${wlMax}</div></div>
+        <div class="kpi"><div class="kpi-label">Latest Water Level %</div><div class="kpi-value">${wlLatest}</div></div>
+      </div>`)
+    // Pressure trend
+    const bmpValues = Object.values(data.bmp180 || {})
+    const pressures = bmpValues.map(v=> v.pressure_hPa).filter(p=> typeof p==='number')
+    if (pressures.length) {
+      const pAvg = (pressures.reduce((a,b)=>a+b,0)/pressures.length).toFixed(1)
+      const pLast = pressures[pressures.length-1].toFixed(1)
+      sections.push(`<h3>Atmospheric Pressure</h3><p>Average: <b>${pAvg} hPa</b>, Latest: <b>${pLast} hPa</b>. Low pressure may correlate with sustained rainfall systems.</p>`)
+    }
+  }
+
+  // Landslide-focused sensors: rain (hill), soil, tilt, mpu (vibration)
+  if (reportType !== 'flood') {
+    const soilValues = Object.values(data.soil || {})
+    const analogs = soilValues.map(v=> typeof v.analog === 'number'? v.analog : (typeof v.moisture==='number'? v.moisture : null)).filter(n=> n!==null)
+    const soilAvg = analogs.length? (analogs.reduce((a,b)=>a+b,0)/analogs.length).toFixed(0) : '--'
+    const soilLast = analogs.length? analogs[analogs.length-1].toFixed(0): '--'
+    const tiltValues = Object.values(data.tilt || {})
+    const tiltEvents = tiltValues.filter(v=> v.value === 0).length
+    const mpuValues = Object.values(data.mpu6050 || {})
+    const vibrations = mpuValues.map(v=> {
+      const ax=v.accelX||0, ay=v.accelY||0, az=v.accelZ||0
+      return Math.sqrt(ax*ax+ay*ay+az*az)
+    })
+    const vibMax = vibrations.length? Math.max(...vibrations).toFixed(3): '--'
+    sections.push(`<h2>Landslide Risk Overview</h2>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-label">Soil Moisture Avg (Analog)</div><div class="kpi-value">${soilAvg}</div></div>
+        <div class="kpi"><div class="kpi-label">Latest Soil Moisture</div><div class="kpi-value">${soilLast}</div></div>
+        <div class="kpi"><div class="kpi-label">Tilt Events</div><div class="kpi-value">${tiltEvents}</div></div>
+        <div class="kpi"><div class="kpi-label">Max Ground Vibration (g)</div><div class="kpi-value">${vibMax}</div></div>
+      </div>`)
+  }
+
+  // Detailed tables subset (limit to last 15 per sensor)
+  function mapToRows(map, pick) {
+    if (!map) return []
+    return Object.entries(map).slice(-15).map(([k,v])=> pick(k,v))
+  }
+  if (reportType !== 'landslide') {
+    const wlRows = mapToRows(data.waterLevel || {}, (k,v)=> ({Key:k, Time:(v.time||v.timestamp||'').toString().slice(0,19), Level:(v.WaterLevelPercentage||v.waterLevelPercentage||v.waterLevel||v.value||'--')}))
+    sections.push(`<h3>Water Level Recent Readings</h3>${buildTable(wlRows)}`)
+  }
+  if (reportType !== 'flood') {
+    const soilRows = mapToRows(data.soil || {}, (k,v)=> ({Key:k, Time:(v.timestamp||'').toString().slice(0,19), Analog:(v.analog||v.moisture||'--'), Digital:(v.digital!==undefined? v.digital:'')}))
+    sections.push(`<h3>Soil Moisture Recent Readings</h3>${buildTable(soilRows)}`)
+    const tiltRows = mapToRows(data.tilt || {}, (k,v)=> ({Key:k, Time:(v.timestamp||'').toString().slice(0,19), Status:v.value===0?'TILTED':'NORMAL'}))
+    sections.push(`<h3>Tilt Sensor Recent Status</h3>${buildTable(tiltRows)}`)
+  }
+  return sections.join('\n')
+}
+
+ipcMain.handle('generate-report', async (_event, options) => {
+  try {
+    const { reportType='combined', timeRange='24h' } = options || {}
+    // Gather fresh complete dataset for accuracy
+    const latest = await fetchLatestSensorData()
+    if (!latest.success) return { success:false, message: 'Failed to fetch sensor data for report.' }
+    let data = latest.data
+    // Determine cutoff
+    const now = Date.now()
+    let cutoff = null
+    if (timeRange === '1h') cutoff = now - 3600_000
+    else if (timeRange === '6h') cutoff = now - 6*3600_000
+    else if (timeRange === '24h') cutoff = now - 24*3600_000
+    else if (timeRange === '7d') cutoff = now - 7*24*3600_000
+    if (cutoff) {
+      data = { ...data,
+        bmp180: filterByTimeRange(data.bmp180, cutoff),
+        mpu6050: filterByTimeRange(data.mpu6050, cutoff),
+        rain: filterByTimeRange(data.rain, cutoff),
+        floodsRain: filterByTimeRange(data.floodsRain, cutoff),
+        soil: filterByTimeRange(data.soil, cutoff),
+        tilt: filterByTimeRange(data.tilt, cutoff),
+        waterLevel: filterByTimeRange(data.waterLevel, cutoff),
+      }
+    }
+    const titleMap = { flood:'Flood Risk Report', landslide:'Landslide Risk Report', combined:'Flood & Landslide Combined Report' }
+    const reportTitle = titleMap[reportType] || titleMap.combined
+    const generatedAt = new Date().toLocaleString('en-GB', { hour12:false })
+    const sectionsHTML = summarizeData(data, reportType)
+    const html = `<!DOCTYPE html><html><head><meta charset='utf-8'/><title>${reportTitle}</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin:32px; color:#0f172a; }
+        h1 { font-size:24px; margin:0 0 4px; color:#1e3a8a; }
+        h2 { margin:32px 0 12px; font-size:20px; color:#1e293b; }
+        h3 { margin:28px 0 10px; font-size:16px; color:#334155; }
+        p { line-height:1.4; }
+        .meta { font-size:12px; color:#475569; margin-bottom:20px; }
+        .kpi-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin:12px 0 4px; }
+        .kpi { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:12px; }
+        .kpi-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#475569; }
+        .kpi-value { font-size:20px; font-weight:700; color:#0f172a; margin-top:4px; }
+        table.data-table { width:100%; border-collapse:collapse; font-size:12px; }
+        table.data-table th { text-align:left; background:#1e40af; color:#fff; padding:6px 8px; font-weight:600; }
+        table.data-table td { border:1px solid #e2e8f0; padding:6px 8px; }
+        .footer { margin-top:40px; font-size:11px; color:#64748b; text-align:center; }
+        .badge { display:inline-block; padding:2px 8px; font-size:11px; border-radius:12px; background:#1e3a8a; color:#fff; font-weight:600; }
+      </style></head><body>
+      <h1>${reportTitle}</h1>
+      <div class='meta'>Generated: ${generatedAt} | Range: ${timeRange} | Environment: ${process.env.NODE_ENV || 'production'}</div>
+      ${sectionsHTML}
+      <div class='footer'>Disaster Operations Center – Automated Report • ${generatedAt}</div>
+      </body></html>`
+    const pdfWin = new BrowserWindow({ show:false, webPreferences:{ offscreen:true } })
+    await pdfWin.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(html))
+    const pdfBuffer = await pdfWin.webContents.printToPDF({ pageSize:'A4', printBackground:true, marginsType:1 })
+    pdfWin.destroy()
+    const { filePath } = await dialog.showSaveDialog({ title:'Save Report', defaultPath: reportTitle.replace(/[^a-z0-9]+/gi,'_')+'.pdf', filters:[{ name:'PDF', extensions:['pdf'] }] })
+    if (!filePath) return { success:false, message:'Save cancelled' }
+    fs.writeFileSync(filePath, pdfBuffer)
+    return { success:true, message:'Report generated', path:filePath }
+  } catch (err) {
+    console.error('Report generation failed:', err)
+    return { success:false, message:err.message }
+  }
+})
 
 // Realtime water level listener: pushes updates without waiting for polling
 async function startRealtimeWaterLevelListener(win) {
