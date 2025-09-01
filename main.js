@@ -672,15 +672,42 @@ ipcMain.handle("save-notifications", async (_event, notifications) => {
     const { collection, addDoc, serverTimestamp } = await import("firebase/firestore")
     const colRef = collection(firestore, "notifications")
     let saved = 0
+    // targeted sensors: IMU (MPU6050), Rainfall, Soil Moisture, Tilt.
+    const isTargetSensorNotification = (n) => {
+      try {
+        const candidates = []
+        if (typeof n.sensor === "string") candidates.push(n.sensor)
+        if (typeof n.source === "string") candidates.push(n.source)
+        if (typeof n.category === "string") candidates.push(n.category)
+        // Use message as a heuristic fallback
+        if (typeof n.message === "string") candidates.push(n.message)
+        const text = candidates.join(" ").toLowerCase()
+        if (!text) return false
+        const keywords = [
+          "mpu6050",
+          "imu",
+          "rain",
+          "rainfall",
+          "soil",
+          "soil moisture",
+          "tilt",
+        ]
+        return keywords.some((k) => text.includes(k))
+      } catch {
+        return false
+      }
+    }
     for (const n of notifications) {
       // Basic validation & normalization
       const now = new Date()
+      const isTarget = isTargetSensorNotification(n)
+      const userIdForDoc = isTarget ? "X5RU2nV4uuuM6f3sdKyb" : "u6vBGxJXJIkFg0a2SKg7"
       await addDoc(colRef, {
         isRead: false,
         message: n.message || "",
         time: n.time || now.toLocaleString("en-GB", { hour12: false }),
         type: n.type === "landslide" || n.type === "flood" ? n.type : "info",
-        userID: "u6vBGxJXJIkFg0a2SKg7",
+        userID: userIdForDoc,
       })
       saved++
     }
