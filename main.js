@@ -776,8 +776,8 @@ function createWindow() {
     win.webContents.openDevTools()
   }
 
-  // Start realtime listener for water level (and potentially others later)
-  startRealtimeWaterLevelListener(win)
+  // Start realtime listeners for all sensors
+  startRealtimeListeners(win)
 }
 
 // Utility: parse timestamp-like value to Date (fallback now)
@@ -945,6 +945,104 @@ ipcMain.handle('generate-report', async (_event, options) => {
     return { success:false, message:err.message }
   }
 })
+
+// Realtime listeners for all sensors: on any change, push fresh data to renderer
+async function startRealtimeListeners(win) {
+  try {
+    if (!database) {
+      const initialized = await initializeFirebase()
+      if (!initialized) return
+    }
+    const firebaseDatabase = await import("firebase/database")
+
+    // Debounced push to renderer avoiding storm of updates
+    let updateTimer = null
+    const schedulePushUpdate = () => {
+      if (updateTimer) return
+      updateTimer = setTimeout(async () => {
+        updateTimer = null
+        try {
+          const latest = await fetchLatestSensorData()
+          if (latest.success && !win.isDestroyed()) {
+            win.webContents.send("sensor-data-update", latest.data)
+          }
+        } catch (err) {
+          console.error("Realtime update failed:", err.message)
+        }
+      }, 250)
+    }
+
+    const listenPath = (path, label) => {
+      try {
+        const ref = firebaseDatabase.ref(database, path)
+        const q = firebaseDatabase.query(ref, firebaseDatabase.limitToLast(50))
+        firebaseDatabase.onValue(
+          q,
+          () => {
+            // console.log(`[Realtime] ${label} change @ ${path}`)
+            schedulePushUpdate()
+          },
+          (error) => {
+            console.warn(`[Realtime] ${label} listener error @ ${path}:`, error.message)
+          }
+        )
+        console.log(`[Realtime] Listening: ${label} -> ${path}`)
+      } catch (err) {
+        console.warn(`[Realtime] Failed to attach listener for ${label} @ ${path}:`, err.message)
+      }
+    }
+
+    // Fixed sensor paths
+    const FIXED = {
+      bmp: ["/Sensors/BMP180Readings"],
+      mpu: ["/Sensors/MPU6050Readings"],
+      rain: ["/Sensors/RainReadings"],
+      floodsRain: ["/Sensors/FloodsRainReadings"],
+      tilt: ["/Sensors/TiltReadings"],
+    }
+    FIXED.bmp.forEach(p => listenPath(p, "BMP180"))
+    FIXED.mpu.forEach(p => listenPath(p, "MPU6050"))
+    FIXED.rain.forEach(p => listenPath(p, "Rain"))
+    FIXED.floodsRain.forEach(p => listenPath(p, "FloodsRain"))
+    FIXED.tilt.forEach(p => listenPath(p, "Tilt"))
+
+    // Dynamic soil paths (reuse candidates from fetchLatestSensorData)
+    const soilPaths = [
+      process.env.SOIL_MOISTURE_PATH || "/Sensors/SoilMoistureReadings",
+      "/Sensors/SoilReadings",
+      "/Sensors/SoilMoisture",
+      "/Sensors/SoilSensor",
+      "/SoilMoistureReadings",
+      "/SoilSensor",
+      "/Soil",
+      "/Sensors/Soil",
+    ].filter((v, i, a) => v && a.indexOf(v) === i)
+    soilPaths.forEach(p => listenPath(p, "Soil"))
+
+    // Dynamic water level paths (reuse candidates)
+    const waterOverride = process.env.WATER_LEVEL_PATH
+    const waterPaths = [
+      waterOverride || "/Sensors/waterLevelSensor/levelData",
+      "/Sensors/waterLevelSensor/leveldata",
+      "/Sensors/waterLevelSensor",
+      "/Sensors/WaterLevelSensor/levelData",
+      "/Sensors/WaterLevelSensor",
+      "/Sensors/WaterLevelReadings",
+      "/Sensors/WaterLevel",
+      "/waterLevelSensor/levelData",
+      "/WaterLevelSensor/levelData",
+      "/waterLevelSensor",
+      "/WaterLevelSensor",
+    ].filter((v, i, a) => v && a.indexOf(v) === i)
+    waterPaths.forEach(p => listenPath(p, "WaterLevel"))
+
+    // Push one initial update quickly
+    schedulePushUpdate()
+    console.log("✅ Realtime listeners for all sensors started")
+  } catch (error) {
+    console.error("Failed to start realtime listeners:", error.message)
+  }
+}
 
 // Realtime water level listener: pushes updates without waiting for polling
 async function startRealtimeWaterLevelListener(win) {
