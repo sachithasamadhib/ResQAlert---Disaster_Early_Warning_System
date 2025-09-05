@@ -1,4 +1,4 @@
-# ResQAlert  Disaster Early Warning System
+# ResQAlert
 
 A robust, integrated platform for early disaster alerts and response in Sri Lanka. Built with Electron, Firebase, Kotlin, and Arduino, ResQAlert delivers real-time warnings to help safeguard communities and support disaster management efforts.
 
