@@ -1,0 +1,31 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.MAD_day3" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorSurfaceContainer">@color/surfaceContainer</item>
+        <item name="colorOutline">@color/outline_color</item>
+    </style>
+
+    <!-- res/values/themes.xml -->
+    <style name="Theme.DisasterManagement2" parent="Theme.MaterialComponents.DayNight">
+        <!-- Light theme attributes -->
+        <item name="colorPrimary">@color/red_500</item>
+        <item name="colorPrimaryVariant">@color/red_500</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <!-- Add other light theme attributes -->
+    </style>
+
+    <!-- res/values-night/themes.xml -->
+    <style name="Theme.DisasterManagement" parent="Theme.MaterialComponents.DayNight">
+        <!-- Dark theme attributes -->
+        <item name="colorPrimary">@color/red_500</item>
+        <item name="colorPrimaryVariant">@color/red_500</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <!-- Ensure text colors are visible in dark mode -->
+        <item name="android:textColor">@color/white</item>
+        <item name="android:windowBackground">@color/dark_background</item>
+    </style>
+
+    <style name="Theme.MAD_day3" parent="Base.Theme.MAD_day3" />
+</resources>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="blue_500">#FF0079FF</color>
+    <color name="red_500">#FFF44336</color>
+    <color name="gray_200">#FFEEEEEE</color>
+    <color name="gray_600">#FF757575</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="gray">#FF9E9E9E</color>
+    <color name="danger_high">#FF5252</color>
+    <color name="safe">#4CAF50</color>
+
+    <color name="surfaceContainer">#FFF2F6FF</color>
+    <color name="error_color">#FF0000</color>
+    <color name="outline_color">#FF0000</color>
+    <!-- res/values/colors.xml -->
+    <color name="dark_background">#121212</color>
+    <color name="dark_text_color">#FFFFFF</color>
+
+
+
+    <!-- Background colors -->
+    <color name="background_light">#F5F5F5</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+
+    <!-- Divider color -->
+    <color name="divider_light">#E0E0E0</color>
+
+    <!-- Circle background -->
+    <color name="circle_bg_accent">#E3F2FD</color>
+
+</resources>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <LinearLayout
+        android:layout_width="match_parent"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/landslideCard"
+        android:background="#ffffff"
+        android:padding="24dp"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🌊 Landslide Alert Status"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#2c3e50" />
+
+            <TextView
+                android:id="@+id/statusDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● NORMAL"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#27ae60"
+                android:background="#e8f5e8"
+                android:padding="12dp" />
+        </LinearLayout>
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#ecf0f1"
+            android:layout_marginBottom="16dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Soil moisture level:"
+                android:textSize="16sp"
+                android:textColor="#7f8c8d" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/mointureLevel"
+                android:text="10%"
+                android:textSize="16sp"
+                android:textColor="#2c3e50" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:id="@+id/tiltTitleID"
+                android:text="Tilt detection"
+                android:textSize="16sp"
+                android:textColor="#7f8c8d" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No"
+                android:id="@+id/tiltStatus"
+                android:textSize="16sp"
+                android:textColor="#2c3e50" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Slope movement detection"
+                android:textSize="16sp"
+                android:textColor="#7f8c8d" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Not Detected"
+                android:id="@+id/movementStatus"
+                android:textSize="16sp"
+                android:textColor="#2c3e50" />
+        </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Accelaration Y"
+            android:textSize="16sp"
+            android:textColor="#7f8c8d" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Not Detected"
+            android:id="@+id/movementY"
+            android:textSize="16sp"
+            android:textColor="#2c3e50" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Accelaration Z"
+            android:textSize="16sp"
+            android:textColor="#7f8c8d" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Not Detected"
+            android:id="@+id/movementZ"
+            android:textSize="16sp"
+            android:textColor="#2c3e50" />
+    </LinearLayout>
+    </LinearLayout>

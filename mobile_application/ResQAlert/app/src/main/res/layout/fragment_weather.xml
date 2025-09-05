@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:context=".weather">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_marginTop="16dp"
+            android:id="@+id/notificationLabel"
+            android:layout_height="wrap_content"
+            android:text="Notifications"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            >
+        </TextView>
+        <!-- Scrollable Content Area -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                    android:id="@+id/idSwipeToRefresh"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    tools:context=".MainActivity">
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/notificationHolderSet"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+                </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</FrameLayout>

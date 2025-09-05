@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f5f7fa"
+    android:fillViewport="true"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center">
+
+        <!-- Header Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="40dp">
+
+            <!-- App Logo/Icon -->
+            <LinearLayout
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="#2980b9"
+                android:gravity="center"
+                android:layout_marginBottom="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🛡️"
+                    android:textSize="32sp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Disaster Management (Beta)"
+                android:textColor="#2c3e50"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Emergency Response System"
+                android:textSize="16sp"
+                android:textColor="#7f8c8d"
+                android:layout_marginBottom="40dp" />
+
+        </LinearLayout>
+
+        <!-- Login Form Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#ffffff"
+            android:padding="32dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sign In"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="#2c3e50"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Access your emergency monitoring dashboard"
+                android:textSize="14sp"
+                android:textColor="#7f8c8d"
+                android:layout_marginBottom="32dp" />
+
+            <!-- Username/Email Field -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Email"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#2c3e50"
+                android:layout_marginBottom="8dp" />
+
+            <EditText
+                android:id="@+id/editTextUsername"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="#f8f9fa"
+                android:hint="Enter email"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textSize="16sp"
+                android:textColor="#2c3e50"
+                android:textColorHint="#bdc3c7"
+                android:inputType="textEmailAddress"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Password Field -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Password"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#2c3e50"
+                android:layout_marginBottom="8dp" />
+
+            <EditText
+                android:id="@+id/editTextPassword"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="#f8f9fa"
+                android:hint="Enter your password"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textSize="16sp"
+                android:textColor="#2c3e50"
+                android:textColorHint="#bdc3c7"
+                android:inputType="textPassword"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Remember Me & Forgot Password -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="32dp">
+
+                <CheckBox
+                    android:id="@+id/checkBoxRemember"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Remember me"
+                    android:textSize="14sp"
+                    android:textColor="#7f8c8d" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+            <!-- Login Button -->
+            <Button
+                android:id="@+id/lgoInButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Log In"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#ffffff"
+                android:background="#2980b9"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Or Divider -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="#ecf0f1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="OR"
+                    android:textSize="12sp"
+                    android:textColor="#bdc3c7"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="#ecf0f1" />
+
+            </LinearLayout>
+            <Button
+                android:id="@+id/buttonCreateAcc"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Create account"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#ffffff"
+                android:background="#2980b9"
+                android:layout_marginBottom="16dp" />
+
+        </LinearLayout>
+        <!-- Footer -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Need help? Contact support"
+                android:textSize="14sp"
+                android:textColor="#3498db"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="© 2025 Disaster Management System"
+                android:textSize="12sp"
+                android:textColor="#bdc3c7" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

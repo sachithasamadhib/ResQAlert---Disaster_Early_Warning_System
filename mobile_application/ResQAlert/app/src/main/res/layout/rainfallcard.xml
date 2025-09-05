@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:id="@+id/rainfallID"
+    android:background="#ffffff"
+    android:padding="24dp"
+    android:layout_marginBottom="16dp"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/disasterTitle2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🌧️ Rainfall Monitoring"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#2c3e50" />
+
+        <TextView
+            android:id="@+id/rainfallStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="● NORMAL"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#27ae60"
+            android:background="#e8f5e8"
+            android:padding="12dp" />
+
+    </LinearLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#ecf0f1"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Rainfall Details Grid -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Preasure:"
+            android:textSize="16sp"
+            android:textColor="#7f8c8d" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="200hpa"
+            android:id="@+id/preasureAmu"
+            android:textSize="16sp"
+            android:textColor="#2c3e50" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Water level:"
+            android:textSize="16sp"
+            android:textColor="#7f8c8d" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/waterLevelAmu"
+            android:textSize="16sp"
+            android:textColor="#2c3e50" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Altitude:"
+            android:textSize="16sp"
+            android:textColor="#7f8c8d" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/altitudeAmu"
+            android:text="200hpa"
+            android:textSize="16sp"
+            android:textColor="#2c3e50" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Temp:"
+            android:textSize="16sp"
+            android:textColor="#7f8c8d" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="200hpa"
+            android:textSize="16sp"
+            android:id="@+id/tempAmu"
+            android:textColor="#2c3e50" />
+    </LinearLayout>
+</LinearLayout>

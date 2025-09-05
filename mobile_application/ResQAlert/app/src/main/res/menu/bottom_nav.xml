@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Alerts"
+        android:id="@+id/alertPart"
+        android:icon="@drawable/alerts_svgrepo_com"
+        />
+    <item android:title="Weather"
+        android:id="@+id/weatherPart"
+        android:icon="@drawable/weather_2_svgrepo_com"
+        />
+    <item android:title="Warnings"
+        android:id="@+id/warningsPart"
+        android:icon="@drawable/warning_circle_svgrepo_com"
+        />
+    <item android:title="Settings"
+        android:id="@+id/settingsPart"
+        android:icon="@drawable/settings_2_svgrepo_com"
+        />
+</menu>
