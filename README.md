@@ -1,4 +1,4 @@
-# ResQAlert — Disaster Early Warning System
+# ResQAlert  Disaster Early Warning System
 
 A robust, integrated platform for early disaster alerts and response in Sri Lanka. Built with Electron, Firebase, Kotlin, and Arduino, ResQAlert delivers real-time warnings to help safeguard communities and support disaster management efforts.
 
@@ -33,7 +33,7 @@ Data is processed in real-time using Firebase Realtime Database for the mobile a
 - Firebase integration for real-time database connectivity.
 - Built-in Firebase connection testing functionality.
 - Professional data visualization with interactive charts and graphs using Chart.js.
-- Auto-refresh capability for real-time data updates every 30 seconds.
+- Auto-refresh capability for real-time data.
 - Responsive design optimized for various screen sizes and resolutions.
 - User management system with role-based access control.
 - Activity logging for real-time tracking of user actions and system events.
@@ -114,6 +114,13 @@ We welcome contributions to enhance ResQAlert. To contribute, please follow thes
 6. **Open** a Pull Request against the main branch of this repository, providing a detailed description of your changes.
 
 For minor suggestions or bug reports, feel free to open an issue with the appropriate tag.
+
+## 👥 Contributors
+We are grateful to the following contributors for their valuable efforts in building ResQAlert:
+
+- [Viraj Wathsala Gunasinghe](https://github.com/virajwathsalag)
+- [Ravin Jayasanka](https://github.com/MrRaveen)
+- [Sanuja Rasanajna](https://github.com/SanujaRasanajna2007)
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
